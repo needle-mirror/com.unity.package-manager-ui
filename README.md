@@ -1,2 +1,3 @@
-# package-manager-ui
-Unity Package Manager user interface
+# Unity Package Manager UI
+
+Unity Package Manager UI as a Unity Package
