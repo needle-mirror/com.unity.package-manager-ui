@@ -4,6 +4,31 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2018-01-18
+### Fixes
+- Replace VisualContainer by VisualElement in code and templates
+
+## [1.5.0] - 2018-01-17
+### Fixes
+- Move "Project->Packages->Manage" menu item to "Window->Package Manager"
+- Show the latest version and description in tab "Install" instead of the current version
+- Display "Recommended" tag properly
+- Display "Go back to" when latest version is less than current one
+- Do not display "Update to" when current version is greater than lastest one. (case for embedded or local packages)
+
+## [1.4.0] - 2018-01-12
+### Fixes
+- Surround specific Unity version 2018.2 code due to API break in UIElements
+- Replace packages action button label:
+	- "Install" instead of "Add" for packages
+	- "Enable/Disable" instead of "Add/Remove" for built-in packages
+- "alpha", "beta", "experimental" and "recommended" tags support
+- Add loading progress while opening window
+- UI polish
+- Package description and display name update
+- Extra messaging on package state
+- Documentation update
+
 ## [1.3.0] - 2017-12-12
 ### Changes
 - Add assembly definition files

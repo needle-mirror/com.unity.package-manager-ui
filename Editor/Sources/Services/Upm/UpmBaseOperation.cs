@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
+using Semver;
 using UnityEngine;
 using UnityEditor.PackageManager.Requests;
 
@@ -29,16 +30,45 @@ namespace UnityEditor.PackageManager.UI
                 displayName = new CultureInfo("en-US").TextInfo.ToTitleCase(displayName);
             }
 
+            var lastCompatible = info.versions.latestCompatible;
             var versions = new List<string>();
             versions.AddRange(info.versions.compatible);
-            if (versions.All(version => version != info.version))
+            if (versions.FindIndex(version => version == info.version) == -1)
             {
                 versions.Add(info.version);
+
+                versions.Sort((left, right) =>
+                {
+                    SemVersion leftVersion = left;
+                    SemVersion righVersion = right;
+                    return leftVersion.CompareByPrecedence(righVersion);
+                });
+
+                SemVersion packageVersion = info.version;
+                if (!string.IsNullOrEmpty(lastCompatible))
+                {
+                    SemVersion lastCompatibleVersion =
+                        string.IsNullOrEmpty(lastCompatible) ? (SemVersion) null : lastCompatible;
+                    if (packageVersion != null && string.IsNullOrEmpty(packageVersion.Prerelease) &&
+                        packageVersion.CompareByPrecedence(lastCompatibleVersion) > 0)
+                        lastCompatible = info.version;
+                }
+                else
+                {
+                    if (packageVersion != null && string.IsNullOrEmpty(packageVersion.Prerelease))
+                        lastCompatible = info.version;
+                }
             }
-            
+
             foreach(var version in versions)
             {
-                var state = info.version == info.versions.latestCompatible ? PackageState.UpToDate : PackageState.Outdated;
+                var isVersionCurrent = version == info.version && isCurrent;
+                var state = (info.originType == OriginType.Builtin || info.version == lastCompatible) ? PackageState.UpToDate : PackageState.Outdated;
+                
+                // Happens mostly when using a package that hasn't been in production yet.
+                if (info.versions.all.Length <= 0)
+                    state = PackageState.UpToDate;
+                
                 if (info.errors.Length > 0)
                     state = PackageState.Error;
 
@@ -50,8 +80,9 @@ namespace UnityEditor.PackageManager.UI
                     Version = version,
                     Description = info.description,
                     Category = info.category,
-                    IsCurrent = version == info.version && isCurrent,
-                    IsLatest = version == info.versions.latestCompatible,
+                    IsCurrent = isVersionCurrent,
+                    IsLatest = version == lastCompatible,
+                    IsRecommended = version == info.versions.recommended,
                     Errors = info.errors.ToList(),
                     Group = GroupName(info.originType),
                     State = state,
@@ -139,7 +170,14 @@ namespace UnityEditor.PackageManager.UI
         private void FinalizeOperation()
         {
             EditorApplication.update -= Progress;
-            OnOperationFinalized();            
+            OnOperationFinalized();
+        }
+
+        public void Cancel()
+        {
+            EditorApplication.update -= Progress;
+            OnOperationError = delegate { };
+            OnOperationFinalized = delegate { };
         }
 
         private bool TryForcedError()

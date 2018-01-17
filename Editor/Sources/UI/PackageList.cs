@@ -1,4 +1,4 @@
-﻿using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,9 +17,11 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageList : VisualElement
     {
         public event Action<Package> OnSelected = delegate { };
+        public event Action OnLoaded = delegate { };
 
         private readonly VisualElement root;
         private const string emptyId = "emptyArea";
+        private const string loadingId = "loadingArea";
         private Package selected;
         private PackageItem selectedItem;
         private SortedDictionary<string, PackageGroup> Groups;
@@ -32,14 +34,22 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
             root.StretchToParentSize();
 
+            root.Q<VisualElement>(emptyId).visible = false;
+            root.Q<VisualElement>(loadingId).visible = true;
+            LoadingSpinner.Start();
+
             PackageCollection.Instance.OnPackagesChanged += SetPackages;
             PackageCollection.Instance.OnFilterChanged += OnFilterChanged;
             
             Reload();
             
             // Hack -- due to an issue with scrollView not laying out its content properly when using templates
-            //            (everything inside has size 0). This forces a re-size after layout.
+            // (everything inside has size 0). This forces a re-size after layout.
+#if UNITY_2018_2_OR_NEWER
+            List.RegisterCallback<GeometryChangedEvent>(geometryChangedEvent =>
+#else
             List.RegisterCallback<PostLayoutEvent>(postLayoutEvent =>
+#endif
             {
                 List.contentContainer.style.minWidth = List.contentViewport.layout.width;
                 List.contentContainer.style.minHeight = List.contentViewport.layout.height;
@@ -62,31 +72,30 @@ namespace UnityEditor.PackageManager.UI
         {
             List.Clear();
             Groups.Clear();
-            ClearSelection();            
+            ClearSelection();
             Spinner.Stop();
-            root.Q<VisualContainer>(emptyId).visible = false;
+            root.Q<VisualElement>(emptyId).visible = false;
         }
         
         private void SetPackages(IEnumerable<Package> packages)
         {
+            OnLoaded();
             ClearAll();
+
+            root.Q<VisualElement>(loadingId).visible = false;
+            LoadingSpinner.Stop();
 
             foreach (var package in packages)
             {
                 AddPackage(package);                
             }
 
-            if (packages.Any())
-                root.Q<VisualContainer>(emptyId).visible = false;
-            else
-            {
-                root.Q<VisualContainer>(emptyId).visible = true;                                
-            }
+            root.Q<VisualElement>(emptyId).visible = !packages.Any();
         }
 
         private void AddPackage(Package package)
         {
-            var groupName = package.Display.Group;
+            var groupName = package.Latest.Group;
             var group = GetOrCreateGroup(groupName);
             var packageItem = group.AddPackage(package);
 
@@ -141,5 +150,6 @@ namespace UnityEditor.PackageManager.UI
 
         private ScrollView List { get { return root.Q<ScrollView>("scrollView"); } }
         private LoadingSpinner Spinner { get { return root.Q<LoadingSpinner>("packageListSpinner"); } }
+        private LoadingSpinner LoadingSpinner { get { return root.Query<LoadingSpinner>("loadingSpinner").First(); } }
     }
 }
