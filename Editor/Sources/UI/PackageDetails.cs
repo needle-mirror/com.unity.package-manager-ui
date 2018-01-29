@@ -125,43 +125,47 @@ namespace UnityEditor.PackageManager.UI
                 root.Q<ScrollView>("detailView").scrollOffset = new Vector2(0, 0);
 
                 var isModule = PackageInfo.IsModule(displayPackage.Name);
-                if (PackageInfo.IsModule(displayPackage.Name))
+                if (PackageInfo.IsModule(displayPackage.Name) && string.IsNullOrEmpty(displayPackage.Description))
                 {
-                    DetailModuleReference.text =
-                        string.Format("This built in package controls the presence of the {0} module.",
-                            displayPackage.ModuleName);
+                    DetailModuleReference.text = string.Format("This built in package controls the presence of the {0} module.", displayPackage.ModuleName);
                 }
                 
                 // Show Status string on package if need be
                 DetailPackageStatus.text = string.Empty;
                 if (!isModule)
                 {
-                    if (displayPackage.State == PackageState.Outdated)
+                    var displayPackageList = package.Current ?? package.Latest;
+                    if (displayPackageList.State == PackageState.Outdated)
                     {
                         DetailPackageStatus.text =
-                            "This package is installed for your project and has an available update";
+                            "This package is installed for your project and has an available update.";
                     }
-                    else if (displayPackage.State == PackageState.InProgress)
+                    else if (displayPackageList.State == PackageState.InProgress)
                     {
                         DetailPackageStatus.text =
-                            "This package is being updated or installed";
+                            "This package is being updated or installed.";
                     }
-                    else if (displayPackage.State == PackageState.Error)
+                    else if (displayPackageList.State == PackageState.Error)
                     {
                         DetailPackageStatus.text =
                             "This package is in error, please check console logs for more details.";
                     }
-                    else if (displayPackage.IsCurrent)
+                    else if (displayPackageList.IsCurrent)
                     {
                         DetailPackageStatus.text =
-                            "This package is installed for your project";
+                            "This package is installed for your project.";
+                    }
+                    else
+                    {
+                        DetailPackageStatus.text =
+                            "This package is not installed for your project.";
                     }
                 }
 
-                UIUtils.SetElementDisplay(DetailDesc, !isModule);
+                UIUtils.SetElementDisplayNonEmpty(DetailDesc);
                 UIUtils.SetElementDisplay(DetailVersion, !isModule);
-                UIUtils.SetElementDisplay(DetailModuleReference, isModule);
-                UIUtils.SetElementDisplay(DetailPackageStatus, !string.IsNullOrEmpty(DetailPackageStatus.text));
+                UIUtils.SetElementDisplay(DetailModuleReference, isModule && string.IsNullOrEmpty(displayPackage.Description));
+                UIUtils.SetElementDisplayNonEmpty(DetailPackageStatus);
 
 
                 if (displayPackage.Errors.Count > 0)
@@ -241,13 +245,13 @@ namespace UnityEditor.PackageManager.UI
             var actionLabel = "";
             var enableButton = true;
 
-            if (package.AddSignal.Operation != null && displayPackage.OriginType == OriginType.Builtin)
+            if (package.AddSignal.Operation != null && displayPackage.Origin == PackageOrigin.Builtin)
             {
                 actionLabel = GetButtonText(PackageAction.Enable, true);
                 enableButton = false;
                 visibleFlag = true;
             } 
-            else if (package.AddSignal.Operation != null && displayPackage.OriginType != OriginType.Builtin)
+            else if (package.AddSignal.Operation != null && displayPackage.Origin != PackageOrigin.Builtin)
             {
                 var version = package.AddSignal.Operation.PackageInfo.Version;
                 if (!displayPackage.IsCurrent)
@@ -280,7 +284,7 @@ namespace UnityEditor.PackageManager.UI
             else if (package.Current == null && package.Versions.Any())
             {
                 var version = package.Latest.Version;
-                actionLabel = displayPackage.OriginType == OriginType.Builtin ?
+                actionLabel = displayPackage.Origin == PackageOrigin.Builtin ?
                     GetButtonText(PackageAction.Enable) :
                     GetButtonText(PackageAction.Add, false, version);
                 visibleFlag = true;
@@ -295,18 +299,18 @@ namespace UnityEditor.PackageManager.UI
         {
             var displayPackage = Display(package);
             var visibleFlag = false;
-            var actionLabel = displayPackage.OriginType == OriginType.Builtin ?
+            var actionLabel = displayPackage.Origin == PackageOrigin.Builtin ?
                 GetButtonText(PackageAction.Disable) :
                 GetButtonText(PackageAction.Remove, false, displayPackage.Version);
             var enableButton = false;
 
             if (filter != PackageFilter.All)
             {
-                visibleFlag = package.CanBeRemoved;
-                enableButton = package.CanBeRemoved;
+                visibleFlag = !package.IsPackageManagerUI;
+                enableButton = !package.IsPackageManagerUI;
                 if (package.RemoveSignal.Operation != null)
                 {
-                    actionLabel = displayPackage.OriginType == OriginType.Builtin ?
+                    actionLabel = displayPackage.Origin == PackageOrigin.Builtin ?
                         GetButtonText(PackageAction.Disable, true) :
                         GetButtonText(PackageAction.Remove, true, displayPackage.Version);;
                     enableButton = true;
@@ -327,10 +331,46 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateClick()
         {
+            if (package.IsPackageManagerUI)
+            {
+                if (!EditorUtility.DisplayDialog("", "Updating this package will temporary close Package Manager window, do you want to continue?", "Yes", "No")) 
+                    return;
+                
+                if (package.AddSignal.Operation != null)
+                {
+                    package.AddSignal.Operation.OnOperationSuccess -= OnAddOperationSuccess;
+                    package.AddSignal.Operation.OnOperationError -= OnAddOperationError;
+                    package.AddSignal.ResetEvents();
+                    package.AddSignal.Operation = null;
+                }
+
+                DetailError.ClearError();
+                EditorApplication.update += CloseAndUpdate;
+
+                return;
+            }
+           
             DetailError.ClearError();
             package.Update();
             RefreshAddButton();
         }
+
+        private void CloseAndUpdate()
+        {
+            EditorApplication.update -= CloseAndUpdate;
+
+            // Registered on callback
+            AssemblyReloadEvents.beforeAssemblyReload += PackageManagerWindow.ShowPackageManagerWindow;
+
+            package.Update();
+
+            var windows = Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
+            if (windows.Length > 0)
+            {
+                windows[0].Close();
+            }
+        }
+        
 
         private void RemoveClick()
         {
