@@ -14,9 +14,9 @@ The Package Manager window displays two types of Unity packages:
  - **Built In Packages** or *Modules*, which represent some of the core Unity features. You can use these packages to [turn Unity modules on and off](#PackManDisable).<br>
  **Note:** You can find out more about what each module implements in the [Unity Scripting API](https://docs.unity3d.com/ScriptReference/). Each module assembly page lists which APIs the module implements.
 
-By default, the Package Manager window displays the list of packages in the **In Project** mode, so that only the packages and modules already installed in your project appear in the list. 
+By default, the Package Manager window displays the list of packages in the **In Project** mode, so that only the packages already installed in your project appear in the list. 
 
-To expand the list to include all available packages and modules, click the **All** button. The list now displays all packages and modules registered in the [package registry](#PackManRegistry), regardless of whether they are already installed in the project.
+To expand the list to include all available packages, click the **All** button. The list now displays everything registered in the [package registry](#PackManRegistry), regardless of whether they are already installed in the project.
 
 ![In Project and All modes](Images/PackageManagerUI-Modes.png)
 
@@ -29,12 +29,13 @@ The pane on the right side of the Package Manager window displays details about 
 
 These details include the following information:
  - (A) The display name 
- - (B) The version number
- - \(C\) View the documentation for this package
- - (D) The official package name from the registry starting with `com.unity.`
+ - (B) The version number 
+ - \(C\) The link to open the package documentation page 
+ - (D) The official package name from the registry starting with `com.unity.` 
  - (E) The installation or update status
- - (F) A brief description
+ - (F) A brief description 
  - (G) Buttons to install, remove, disable, or update the package
+ - (H) The link to open the package change log
 
 ### Version tags
 Some packages display special tags next to the version number. These tags convey special information about that version of the package. 
@@ -49,13 +50,22 @@ Package Manager uses the following values:
 | `alpha` or `beta` | This package is at an early stage of the release cycle and may not have been documented and validated by either the development team or Unity's Quality Assurance team. |
 | `experimental` | This package is in development. |
 
+### Finding more information
+You can find out more about a package by viewing the documentation. 
+
+To access it, click the View Documentation link in the Details pane:
+
+![View Documentation link](Images/PackageManagerUI-ViewDocs.png)
+
+The package documentation page opens.
+
 <a name="PackManOpen"></a>
 ## Accessing the Package Manager window
 You can perform a variety of tasks through the Package Manager window:
 
  - [Install a new package](#PackManInstall)
  - [Remove an installed package](#PackManRemove)
- - [Disable a Unity module](#PackManDisable)
+ - [Disable a built-in package](#PackManDisable)
  - [Update an installed package](#PackManUpdate)
 
  To open the Package Manager window, select **Window > Package Manager** from the main menu. 
@@ -86,20 +96,20 @@ To remove an installed package:
  - When you remove a package, any editor or runtime functionality which it implemented is no longer available.
 
 <a name="PackManDisable"></a>
-### Disabling a Unity module
+### Disabling a built-in package
 ![Disable button](Images/PackageManagerUI-DisableButton.png)
 
-To disable a module:
+To disable a built-in package:
  1. Open the Project Manager window.
  2. Click the **In Project** button if you are in **All** mode. 
  3. Expand the **Built In Packages** list in the left pane.
- 4. Select the module you want to remove from the **Built In Packages** list. The module information appears in the Details pane.
- 5. Click the **Disable** button. When the progress bar finishes, the module disappears from the list.
+ 4. Select the package you want to remove from the **Built In Packages** list. Its information appears in the Details pane.
+ 5. Click the **Disable** button. When the progress bar finishes, the package disappears from the list.
  
-**Note:** When you disable a module, the corresponding Unity functionality is no longer available:
-- If you use a Scripting API implemented by a disabled module, you get compiler errors.
-- Components implemented by that module are disabled too. You cannot add them to any GameObjects. If you have a GameObject that already has one of these components, Unity ignores them in Play mode. You can see them in the Inspector window but they are greyed out to indicate that they are not available.
-- When building a game, Unity strips all disabled components. For build targets which support engine code stripping (like WebGL, iOS, and Android), Unity doesn't add any code from a disabled module.
+**Note:** When you disable a built-in package, the corresponding Unity functionality is no longer available:
+- If you use a Scripting API implemented by a disabled package, you get compiler errors.
+- Components implemented by that built-in package are disabled too. You cannot add them to any GameObjects. If you have a GameObject that already has one of these components, Unity ignores them in Play mode. You can see them in the Inspector window but they are greyed out to indicate that they are not available.
+- When building a game, Unity strips all disabled components. For build targets which support engine code stripping (like WebGL, iOS, and Android), Unity doesn't add any code from a disabled built-in package.
 
 <a name="PackManUpdate"></a>
 ### Updating an installed package
@@ -111,7 +121,7 @@ You can update a package while in either the **In Project** or **All** mode:
  3. Click the **Update to X.X.X** button. When the progress bar finishes, the new package version information appears in the Details pane and any new functionality is available. 
 
 ## Advanced package topics
-This section provides more advanced information about the package registry and the manifest files but you don't need to know anything about these topics to install, remove, disable, and update packages.
+This section provides more advanced information about the package manifest file but you don't need to know anything about these topics to install, remove, disable, and update packages.
 
 A Unity package contains a [package manifest file](#PackManManifestsPackage) in addition to the contents (Assets, Shaders, Textures, plug-ins, icons and scripts). The package manifest tells Unity how to display its information page in the Package Manager window and how to install the package in the project.
 
@@ -125,15 +135,14 @@ There are two types of manifest files: [project](#PackManManifestsProject) manif
 
 <a name="PackManManifestsProject"></a>
 #### Project manifests
-Project manifests (`manifest.json`) tell Package Manager which packages and versions are available to the project. In addition, the manifest also optionally specifies the location of the package registry and which packages to test.
+Project manifests (`manifest.json`) tell Package Manager which packages and versions are available to the project.
 
-The following values are supported:
+The following value is supported:
 
 | Key | JSON Type | Description |
 |--|--|--|
-| `dependencies` | Object |List of packages for Package Manager to load or remove. These are usually packages officially registered with Unity. For example, the Package Manager window is available in Unity when the project manifest contains this dependencies entry: `"com.unity.package-manager-ui": "1.3.0"` <br><br>After the user removes a package from the project, the value that appears in the project manifest is "exclude" (instead of the version number). For example: `"com.unity.purchasing": "exclude"` |
-| `registry` | String |The location of the registry where the packages are stored (optional). Package Manager uses this location to download information and updates for packages. By default, the official Unity registry (`packages.unity.com`) is assumed. |
-| `testables` | Array of Strings |List of packages to be tested (optional). |
+| `dependencies` | Object |List of packages for Package Manager to load. These are usually packages officially registered with Unity. |
+
 
 Example of a `manifest.json` file:
 
@@ -141,15 +150,8 @@ Example of a `manifest.json` file:
 		"dependencies": {
 			"com.unity.package-1": "1.0.0",
 			"com.unity.package-2": "2.0.0",
-			"com.unity.package-3": "3.0.0",
-			"com.unity.package-4": "exclude"
-		},
-		"registry": "https://packages.unity.com",
-		"testables": [
-			"com.unity.package-1",
-			"com.unity.package-2",
-			"com.unity.package-3"
-		]
+			"com.unity.package-3": "3.0.0"
+		}
 	}
 
 Unity stores each project manifest in the `[your_project_root_folder]/Packages/manifest.json` file.
@@ -178,7 +180,7 @@ Example of a `package.json` file:
 		"displayName": "Package Number 4",
 		"version": "2.5.1",
 		"unity": "2018.1",
-		"description": "This package provides X, Y, and Z. \n\nTo find out more, click the \"View documentation\" button.",
+		"description": "This package provides X, Y, and Z. \n\nTo find out more, click the \"View Documentation\" link.",
 		"keywords": ["key X", "key Y", "key Z"],
 		"category": "Controllers",
 		"dependencies": {
@@ -212,21 +214,12 @@ This version of Package Manager is compatible with the following versions of the
 Package Manager includes the following known limitations:
 
 * If you manually edit the `manifest.json` file, the Package Manager window doesn't refresh the list of packages. You need to either [re-open the window](#PackManOpen) or [toggle between In Project and All modes](#PackManLists) to force an update.
-* You cannot install or remove built-in modules.
-
-## Package contents
-
-The following table provides an alphabetical list of the important files and folders included in this package.
-
-|Folder or Filename|Description|
-|---|---|
-|`Documentation`|Folder containing the source files used to build the documentation.|
-|`Editor`|Folder containing the source code for the Package Manager window.|
-|`Tests`|Folder containing the Package Manager tests.|
 
 ## Documentation revision history
 |Date|Reason|
 |---|---|
+|Feb 8, 2018|Documentation updated. Matches package version 1.7.0.|
+|Feb 6, 2018|Documentation cleaned up. Matches package version 1.6.1.|
 |Jan 31, 2018|Documentation updated (developmental review)|
 |Jan 29, 2018|Document updated. Matches package version 1.6.0.|
 |Jan 18, 2018|Document updated. Matches package version 1.5.1.|

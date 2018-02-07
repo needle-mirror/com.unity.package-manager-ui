@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,20 +19,28 @@ namespace UnityEditor.PackageManager.UI
             else
                 this.GetRootVisualContainer().AddStyleSheetPath("Styles/Main_Light");
 
-            var template = Resources.Load<VisualTreeAsset>("Templates/PackageManagerWindow").CloneTree(null);
-            this.GetRootVisualContainer().Add(template);
-            template.StretchToParentSize();
+            var windowResource = Resources.Load<VisualTreeAsset>("Templates/PackageManagerWindow");
+            if (windowResource != null)
+            {
+                var template = windowResource.CloneTree(null);
+                this.GetRootVisualContainer().Add(template);
+                template.StretchToParentSize();
 
-            PackageSearchFilterTabs.SetEnabled(false);
+                PackageSearchFilterTabs.SetEnabled(false);
 
-            PackageList.OnSelected += OnPackageSelected;
-            PackageList.OnLoaded += OnPackagesLoaded;
+                PackageList.OnSelected += OnPackageSelected;
+                PackageList.OnLoaded += OnPackagesLoaded;
+            }
         }
 
         public void OnDisable()
         {
-            PackageList.OnSelected -= OnPackageSelected;
-            PackageList.OnLoaded -= OnPackagesLoaded;
+            // Package list item may not be valid here.
+            if (PackageList != null)
+            {
+                PackageList.OnSelected -= OnPackageSelected;
+                PackageList.OnLoaded -= OnPackagesLoaded;
+            }
         }
 
         private void OnPackageSelected(Package package)
@@ -57,6 +67,9 @@ namespace UnityEditor.PackageManager.UI
         {
             get {return this.GetRootVisualContainer().Q<PackageSearchFilterTabs>("tabsGroup");}
         }
+        
+        internal Alert ErrorBanner { get { return this.GetRootVisualContainer().Q<Alert>("errorBanner"); } }
+        
 #endif
 
         [MenuItem("Window/Package Manager", priority = 1500)]
