@@ -86,13 +86,11 @@ namespace UnityEditor.PackageManager.UI
                     this.package.AddSignal.Operation.OnOperationError -= OnAddOperationError;
                     this.package.AddSignal.Operation.OnOperationSuccess -= OnAddOperationSuccess;
                 }
-                this.package.AddSignal.ResetEvents();
 
                 if (this.package.RemoveSignal.Operation != null)
                 {
                     this.package.RemoveSignal.Operation.OnOperationError -= OnRemoveOperationError;
                 }
-                this.package.RemoveSignal.ResetEvents();
             }
             
             this.filter = filter;
@@ -219,9 +217,12 @@ namespace UnityEditor.PackageManager.UI
             // Set visibility
             root.Q<VisualElement>("detail").visible = detailVisible;
             root.Q<VisualElement>(emptyId).visible = !detailVisible;
-            
+
             if (error != null)
+            {
+                Debug.LogError("Error with package details: " + error.message);
                 SetError(error);
+            }
             else
                 DetailError.ClearError();
         }
@@ -328,6 +329,9 @@ namespace UnityEditor.PackageManager.UI
                 visibleFlag = true;
             }
 
+            if (package.RemoveSignal.Operation != null)
+                enableButton = false;
+
             UpdateButton.SetEnabled(enableButton);
             UpdateButton.text = actionLabel;   
             SetUpdateVisibility(visibleFlag);
@@ -336,6 +340,12 @@ namespace UnityEditor.PackageManager.UI
         private void RefreshRemoveButton()
         {
             var displayPackage = Display(package);
+            if (displayPackage == null)
+            {
+                UIUtils.SetElementDisplay(RemoveButton, false);
+                return;
+            }
+            
             var visibleFlag = false;
             var actionLabel = displayPackage.Origin == PackageOrigin.Builtin ?
                 GetButtonText(PackageAction.Disable) :
@@ -353,6 +363,11 @@ namespace UnityEditor.PackageManager.UI
                         GetButtonText(PackageAction.Remove, true, displayPackage.Version);;
                     enableButton = true;
                 }
+            }
+
+            if (package.RemoveSignal.Operation != null)
+            {
+                enableButton = false;
             }
             
             RemoveButton.SetEnabled(enableButton);
@@ -391,6 +406,7 @@ namespace UnityEditor.PackageManager.UI
             DetailError.ClearError();
             package.Update();
             RefreshAddButton();
+            RefreshRemoveButton();
         }
 
         private void CloseAndUpdate()
@@ -415,6 +431,7 @@ namespace UnityEditor.PackageManager.UI
             DetailError.ClearError();
             package.Remove();
             RefreshRemoveButton();
+            RefreshAddButton();
         }
 
         private void ViewDocClick()
@@ -426,7 +443,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void ViewChangelogClick()
         {
-            var packageInfo = Display(package);
+            var packageInfo = package.Latest;
             var url = string.Format("http://docs.unity3d.com/Packages/{0}/changelog/CHANGELOG.html", packageInfo.ShortVersionId);
             Application.OpenURL(url);
         }

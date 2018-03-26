@@ -216,7 +216,8 @@ namespace UnityEditor.PackageManager.UI
         private static void Reload()
         {
             // Force a re-init to initial condition
-            PackageCollection.Instance.Reset();
+            PackageCollection.Instance.SetFilter(PackageFilter.Local, false);
+            PackageCollection.Instance.UpdatePackageCollection(true);
         }
 
         private void ClearAll()
@@ -235,6 +236,13 @@ namespace UnityEditor.PackageManager.UI
         
         private void SetPackages(IEnumerable<Package> packages)
         {
+            if (PackageCollection.Instance.Filter == PackageFilter.Local)
+            {
+                packages = packages.Where(pkg => pkg.Current != null);
+            }
+
+            var previousSelection = selectedItem != null ? selectedItem.package : null;
+
             OnLoaded();
             ClearAll();
 
@@ -259,15 +267,18 @@ namespace UnityEditor.PackageManager.UI
             root.Q<VisualElement>(loadingId).visible = false;
             LoadingSpinner.Stop();
 
-            foreach (var package in packages)
+            foreach (var package in packages.OrderBy(pkg => pkg.Versions.FirstOrDefault() == null ? pkg.Name : pkg.Versions.FirstOrDefault().DisplayName))
             {
-                AddPackage(package);                
+                var item = AddPackage(package);
+
+                if (previousSelection != null && package.Name == previousSelection.Name)
+                    Select(item);
             }
 
             root.Q<VisualElement>(emptyId).visible = !packages.Any();
         }
 
-        private void AddPackage(Package package)
+        private PackageItem AddPackage(Package package)
         {
             var groupName = package.Latest.Group;
             var group = GetOrCreateGroup(groupName);
@@ -277,6 +288,8 @@ namespace UnityEditor.PackageManager.UI
                 Select(packageItem);
 
             packageItem.OnSelected += Select;
+
+            return packageItem;
         }
 
         private PackageGroup GetOrCreateGroup(string groupName)

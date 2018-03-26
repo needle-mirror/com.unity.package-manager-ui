@@ -40,6 +40,8 @@ namespace UnityEditor.PackageManager.UI
 
                 versions.Sort((left, right) =>
                 {
+                    if (left == null || right == null) return 0;
+                    
                     SemVersion leftVersion = left;
                     SemVersion righVersion = right;
                     return leftVersion.CompareByPrecedence(righVersion);
@@ -159,7 +161,11 @@ namespace UnityEditor.PackageManager.UI
             {
                 Error = error;
 
-                Debug.LogError("Cannot perform upm operation: " + Error.message + " [" + Error.errorCode + "]");
+                var message = "Cannot perform upm operation.";
+                if (error != null)
+                    message = "Cannot perform upm operation: " + Error.message + " [" + Error.errorCode + "]";
+                
+                Debug.LogError(message);
 
                 OnOperationError(Error);
             }

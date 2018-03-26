@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Experimental.UIElements;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Tests
 {
@@ -14,7 +15,8 @@ namespace UnityEditor.PackageManager.UI.Tests
         [SetUp]
         public void Setup()
         {
-            PackageCollection.Instance.Reset();
+            PackageCollection.Instance.SetFilter(PackageFilter.Local);
+            PackageCollection.Instance.UpdatePackageCollection(true);
             SetPackages(null);
             Factory.ResetOperations();
         }
@@ -38,22 +40,6 @@ namespace UnityEditor.PackageManager.UI.Tests
             
             PackageCollection.Instance.OnPackagesChanged += onPackageChangedEvent;
             SetPackages(PackageSets.Instance.Many(5, true));
-        }
-
-        [Test]
-        public void When_PackageCollection_Changes_PackageList_Updates()
-        {
-            onPackageChangedEvent = packages =>
-            {
-                var count = Container.Query(null, "package").Build().ToList().Count;
-                Assert.IsTrue(count == 7);
-
-                count = Container.Query(null, "package").Build().ToList().Count;
-                Assert.IsTrue(count == 7);
-            };
-            
-            PackageCollection.Instance.OnPackagesChanged += onPackageChangedEvent;
-            SetPackages(PackageSets.Instance.Many(7, true));
         }
 
         [Test]
@@ -109,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             SetPackages(packages);
             Factory.AddOperation = new MockAddOperation(Factory, latest);
 
-            PackageCollection.Instance.AddPackageInfos(packages);
+            PackageCollection.Instance.SetListPackageInfos(packages);
             var package = PackageCollection.Instance.GetPackageByName(current.Name);
 
             onPackageChangedEvent = newpackages =>
@@ -152,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             Factory.AddOperation = new MockAddOperation(Factory, latest);
             Factory.AddOperation.ForceError = error;
 
-            PackageCollection.Instance.AddPackageInfos(packages);
+            PackageCollection.Instance.SetListPackageInfos(packages);
             var package = PackageCollection.Instance.GetPackageByName(current.Name);
 
             package.AddSignal.OnOperation += operation =>
@@ -184,7 +170,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             var current = packages.ToList().First();
 
             SetPackages(packages);
-            PackageCollection.Instance.AddPackageInfos(packages);
+            PackageCollection.Instance.SetListPackageInfos(packages);
             var package = PackageCollection.Instance.GetPackageByName(current.Name);
             Assert.IsNotNull(package);
 
@@ -203,11 +189,10 @@ namespace UnityEditor.PackageManager.UI.Tests
             var packages = PackageSets.Instance.Many(5);
             var current = packages.ToList().First();
 
-            SetPackages(packages);
-
             var error = MakeError(ErrorCode.Unknown, "Fake error");
             Factory.RemoveOperation = new MockRemoveOperation(Factory) {ForceError = error};
-            PackageCollection.Instance.AddPackageInfos(packages);
+            SetPackages(packages);
+            PackageCollection.Instance.SetListPackageInfos(packages);
             var package = PackageCollection.Instance.GetPackageByName(current.Name);
             Assert.IsNotNull(package);
 
@@ -230,8 +215,8 @@ namespace UnityEditor.PackageManager.UI.Tests
             var packagesLocal = PackageSets.Instance.Many(2);
             var packagesAll = PackageSets.Instance.Many(5);
             
-            SetPackages(packagesLocal);
             Factory.SearchOperation = new MockSearchOperation(Factory, packagesAll);
+            SetPackages(packagesLocal);
 
             onPackageChangedEvent = packages =>
             {

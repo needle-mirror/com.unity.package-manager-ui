@@ -13,13 +13,19 @@ namespace UnityEditor.PackageManager.UI
         public event Action<Package> OnPackageAdded = delegate { };
         public event Action<IEnumerable<Package>> OnPackagesChanged = delegate { };
         public event Action<PackageFilter> OnFilterChanged = delegate { };
-
+        
         [SerializeField]
         private List<PackageInfo> packageInfos;
         [SerializeField] 
         private Dictionary<string, Package> Packages;
 
-        private IBaseOperation currentOperation;
+        private IEnumerable<PackageInfo> LastListOfflinePackages = null;
+        private IEnumerable<PackageInfo> LastListPackages = null;
+        private IEnumerable<PackageInfo> LastSearchPackages = null;
+
+        private ISearchOperation searchOperation;
+        private IListOperation listOperation;
+        private IListOperation listOperationOffline;
 
         private PackageFilter filter;
         public PackageFilter Filter
@@ -43,6 +49,8 @@ namespace UnityEditor.PackageManager.UI
             Packages = new Dictionary<string, Package>();
             
             Filter = PackageFilter.Local;
+
+            FetchAllCaches();
         }
 
         // Return Packages from internal cache.
@@ -58,19 +66,29 @@ namespace UnityEditor.PackageManager.UI
             
             Filter = filter;
             if (refresh)
-                RefreshPackages();
+                UpdatePackageCollection();
             return true;
         }
 
-        // Force a re-init
-        public void Reset()
+        private void Reset()
         {
-            Filter = PackageFilter.Local;
-            RefreshPackages();
+            LastListOfflinePackages = null;
+            LastListPackages = null;
+            LastSearchPackages = null;
+
+            listOperation = null;
+            listOperationOffline = null;
+            searchOperation = null;
+
+            ClearPackagesInternal();
+            FetchAllCaches();            
         }
         
-        public void RefreshPackages()
+        public void UpdatePackageCollection(bool reset = false)
         {
+            if (reset)
+                Reset();
+
             switch (Filter)
             {
                 case PackageFilter.All:
@@ -86,51 +104,165 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        public bool HasFetchedPackageList()
+        {
+            return LastListPackages != null || LastListOfflinePackages != null;
+        }
+        
+        private void FetchListOfflineCache()
+        {
+            if (listOperationOffline == null && LastListOfflinePackages == null)
+            {
+                listOperationOffline = OperationFactory.Instance.CreateListOperation(true);
+                listOperationOffline.GetPackageListAsync(infos => { LastListOfflinePackages = infos; }, error => { ClearPackages(); });
+            }
+        }
+
+        private void FetchListCache()
+        {
+            if (listOperation == null && LastListPackages == null)
+            {
+                var operation = OperationFactory.Instance.CreateListOperation();
+                listOperation = operation;
+                operation.GetPackageListAsync(infos => { LastListPackages = infos; }, error => { ClearPackages(); });
+            }
+        }
+
+        private void FetchSearchCache()
+        {
+            if (searchOperation == null && LastSearchPackages == null)
+            {
+                var operation = OperationFactory.Instance.CreateSearchOperation();
+                searchOperation = operation;
+                operation.GetAllPackageAsync(infos => { LastSearchPackages = infos; }, error => { ClearPackages(); });
+            }
+        }
+
+        private void FetchAllCaches()
+        {
+            FetchListOfflineCache();
+            FetchListCache();
+            FetchSearchCache();
+        }
+
+        private void ListPackagesOffline()
+        {
+            if (LastListPackages != null)
+                SetListPackageInfos(LastListPackages);
+            
+            if (listOperationOffline == null)
+                FetchListOfflineCache();
+
+            if (LastListOfflinePackages == null)
+            {
+                listOperationOffline.OnOperationFinalized -= OnListOperationOfflineFinalized;    // Make sure we cancel previous listeners 
+                listOperationOffline.OnOperationFinalized += OnListOperationOfflineFinalized;
+            }
+            else
+            {
+                SetListPackageInfos(LastListOfflinePackages);
+            }
+        }
+
+        private void OnListOperationOfflineFinalized()
+        {
+            SetListPackageInfos(LastListOfflinePackages);
+        }
+
+        private void ListPackagesOnline()
+        {
+            if (listOperation == null)
+                FetchListCache();
+
+            if (LastListPackages == null)
+            {
+                listOperation.OnOperationFinalized -= OnListOperationFinalized;  // Make sure we cancel previous listeners
+                listOperation.OnOperationFinalized += OnListOperationFinalized;
+            }
+            else
+            {
+                SetListPackageInfos(LastListPackages);
+            }
+        }
+
+        private void OnListOperationFinalized()
+        {
+            listOperation = null;
+            SetListPackageInfos(LastListPackages);
+        }
+
+        private void CancelListOffline()
+        {
+            if (listOperationOffline != null)
+            {
+                listOperationOffline.Cancel();
+                listOperationOffline = null;
+            }  
+        }
+
         private void ListPackages()
         {
-            if (currentOperation != null)
-            {
-                currentOperation.Cancel();
-                currentOperation = null;
-            }
-
-            var operation = OperationFactory.Instance.CreateListOperation();
-            currentOperation = operation;
-            operation.GetPackageListAsync(SetPackageInfos, error => { ClearPackages(); } );
+            ListPackagesOffline();
+            ListPackagesOnline();
         }
-
+        
         private void SearchPackages()
         {
-            if (currentOperation != null)
-            {
-                currentOperation.Cancel();
-                currentOperation = null;
-            }
+            if (searchOperation == null)
+                FetchSearchCache();
 
-            var operation = OperationFactory.Instance.CreateSearchOperation();
-            currentOperation = operation;
-            operation.GetAllPackageAsync(AddSearchPackageInfos, error => { ClearPackages(); } );
+            if (LastSearchPackages == null)
+            {
+                searchOperation.OnOperationFinalized -= OnSearchOperationFinalized; // Make sure we cancel previous listeners
+                searchOperation.OnOperationFinalized += OnSearchOperationFinalized;
+            }
+            else
+            {
+                SetSearchPackageInfos(LastSearchPackages);
+            }            
         }
 
-        private void AddSearchPackageInfos(IEnumerable<PackageInfo> searchPackageInfos)
+        private void OnSearchOperationFinalized()
         {
-            currentOperation = null;
+            SetSearchPackageInfos(LastSearchPackages);
+        }
+
+        private void SetSearchPackageInfos(IEnumerable<PackageInfo> searchPackageInfos)
+        {
+            searchOperation = null;
             var copyPackageInfo = new List<PackageInfo>(packageInfos);
             copyPackageInfo.AddRange(searchPackageInfos.Where(pi => !Packages.ContainsKey(pi.Name) || Packages[pi.Name].Current == null || Packages[pi.Name].Current.Version != pi.Version));
-            SetPackageInfos(copyPackageInfo);
+
+            LastSearchPackages = copyPackageInfo;
+
+            // Don't update the current list if the filter changed since the operation started 
+            if (Filter == PackageFilter.All)
+            {
+                ClearPackageInfosInternal();
+                AddPackageInfos(LastSearchPackages);
+            }
         }
 
-        public void SetPackageInfos(IEnumerable<PackageInfo> packageInfos)
+        public void SetListPackageInfos(IEnumerable<PackageInfo> packageInfos)
         {
-            currentOperation = null;
-            ClearPackagesInternal();
-            AddPackageInfos(packageInfos);
+            // Don't update the current list if the filter changed since the operation started 
+            if (Filter == PackageFilter.Local)
+            {
+                CancelListOffline();
+                ClearPackageInfosInternal();
+                AddPackageInfos(packageInfos);
+            }
+        }
+
+        private IEnumerable<Package> OrderedPackages()
+        {
+            return Packages.Values.OrderBy(pkg => pkg.Versions.LastOrDefault() == null ? pkg.Name : pkg.Versions.Last().DisplayName).AsEnumerable();
         }
 
         public void AddPackageInfo(PackageInfo packageInfo)
         {
             AddPackageInfoInternal(packageInfo);
-            OnPackagesChanged(Packages.Values.AsEnumerable());
+            OnPackagesChanged(OrderedPackages());
         }
 
         public void AddPackageInfos(IEnumerable<PackageInfo> packageInfos)
@@ -143,7 +275,7 @@ namespace UnityEditor.PackageManager.UI
                 AddPackageInfoInternal(packageInfo);
             }
             
-            OnPackagesChanged(Packages.Values.AsEnumerable());
+            OnPackagesChanged(OrderedPackages());
         }
 
         private void AddPackageInfoInternal(PackageInfo packageInfo)
@@ -160,16 +292,25 @@ namespace UnityEditor.PackageManager.UI
             OnPackageAdded(package);
         }
 
+        
         public void ClearPackages()
         {
-            currentOperation = null;
+            listOperation = null;
+            listOperationOffline = null;
+            searchOperation = null;
+            
             ClearPackagesInternal();
-            OnPackagesChanged(Packages.Values.AsEnumerable());
+            OnPackagesChanged(OrderedPackages());
+        }
+
+        private void ClearPackageInfosInternal()
+        {
+            packageInfos.Clear();
         }
 
         private void ClearPackagesInternal()
         {
-            packageInfos.Clear();
+            ClearPackageInfosInternal();
             Packages.Clear();
         }
 
