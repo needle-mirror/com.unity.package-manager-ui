@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -11,23 +10,21 @@ namespace UnityEditor.PackageManager.UI
         public static PackageCollection Instance { get { return instance; } }
         
         public event Action<Package> OnPackageAdded = delegate { };
+        public event Action<Package> OnPackageUpdated = delegate { };
         public event Action<IEnumerable<Package>> OnPackagesChanged = delegate { };
         public event Action<PackageFilter> OnFilterChanged = delegate { };
-        
-        [SerializeField]
+
         private List<PackageInfo> packageInfos;
-        [SerializeField] 
         private Dictionary<string, Package> Packages;
+        private PackageFilter filter;
 
         private IEnumerable<PackageInfo> LastListOfflinePackages = null;
         private IEnumerable<PackageInfo> LastListPackages = null;
         private IEnumerable<PackageInfo> LastSearchPackages = null;
-
-        private ISearchOperation searchOperation;
-        private IListOperation listOperation;
+        public ISearchOperation searchOperation;
+        public IListOperation listOperation;
         private IListOperation listOperationOffline;
 
-        private PackageFilter filter;
         public PackageFilter Filter
         {
             get { return filter; }
@@ -42,7 +39,7 @@ namespace UnityEditor.PackageManager.UI
                     OnFilterChanged(filter);
             }
         }
-
+        
         private PackageCollection()
         {
             packageInfos = new List<PackageInfo>();
@@ -66,7 +63,10 @@ namespace UnityEditor.PackageManager.UI
             
             Filter = filter;
             if (refresh)
+            {
                 UpdatePackageCollection();
+            }
+
             return true;
         }
 
@@ -98,9 +98,6 @@ namespace UnityEditor.PackageManager.UI
                 case PackageFilter.Local:
                     ListPackages();
                     break;
-                default:
-                    Debug.LogError("Unknown package filter.");
-                    break;
             }
         }
 
@@ -108,7 +105,12 @@ namespace UnityEditor.PackageManager.UI
         {
             return LastListPackages != null || LastListOfflinePackages != null;
         }
-        
+
+        public bool HasFetchedSearchPackages()
+        {
+            return LastSearchPackages != null;
+        }
+
         private void FetchListOfflineCache()
         {
             if (listOperationOffline == null && LastListOfflinePackages == null)
@@ -124,7 +126,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var operation = OperationFactory.Instance.CreateListOperation();
                 listOperation = operation;
-                operation.GetPackageListAsync(infos => { LastListPackages = infos; }, error => { ClearPackages(); });
+                operation.GetPackageListAsync(infos => { LastListPackages = infos; });
             }
         }
 
@@ -134,7 +136,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 var operation = OperationFactory.Instance.CreateSearchOperation();
                 searchOperation = operation;
-                operation.GetAllPackageAsync(infos => { LastSearchPackages = infos; }, error => { ClearPackages(); });
+                operation.GetAllPackageAsync(infos => { LastSearchPackages = infos; });
             }
         }
 
@@ -148,8 +150,11 @@ namespace UnityEditor.PackageManager.UI
         private void ListPackagesOffline()
         {
             if (LastListPackages != null)
+            {
                 SetListPackageInfos(LastListPackages);
-            
+                return;
+            }
+
             if (listOperationOffline == null)
                 FetchListOfflineCache();
 
@@ -188,7 +193,10 @@ namespace UnityEditor.PackageManager.UI
         private void OnListOperationFinalized()
         {
             listOperation = null;
-            SetListPackageInfos(LastListPackages);
+            if (LastListPackages != null)
+            {
+                SetListPackageInfos(LastListPackages);
+            }
         }
 
         private void CancelListOffline()
@@ -224,14 +232,17 @@ namespace UnityEditor.PackageManager.UI
 
         private void OnSearchOperationFinalized()
         {
-            SetSearchPackageInfos(LastSearchPackages);
+            if (LastSearchPackages != null)
+            {
+                SetSearchPackageInfos(LastSearchPackages);
+            }
         }
 
         private void SetSearchPackageInfos(IEnumerable<PackageInfo> searchPackageInfos)
         {
             searchOperation = null;
             var copyPackageInfo = new List<PackageInfo>(packageInfos);
-            copyPackageInfo.AddRange(searchPackageInfos.Where(pi => !Packages.ContainsKey(pi.Name) || Packages[pi.Name].Current == null || Packages[pi.Name].Current.Version != pi.Version));
+            copyPackageInfo.AddRange(searchPackageInfos.Where(pi => !Packages.ContainsKey(pi.Name) || Packages[pi.Name].Versions.All(v => v.Version != pi.Version)));
 
             LastSearchPackages = copyPackageInfo;
 
@@ -265,33 +276,6 @@ namespace UnityEditor.PackageManager.UI
             OnPackagesChanged(OrderedPackages());
         }
 
-        public void AddPackageInfos(IEnumerable<PackageInfo> packageInfos)
-        {
-            if (packageInfos == null)
-                packageInfos = Enumerable.Empty<PackageInfo>();
-
-            foreach (var packageInfo in packageInfos.OrderBy(p => p.DisplayName))
-            {
-                AddPackageInfoInternal(packageInfo);
-            }
-            
-            OnPackagesChanged(OrderedPackages());
-        }
-
-        private void AddPackageInfoInternal(PackageInfo packageInfo)
-        {
-            packageInfos.Add(packageInfo);
-
-            if (Packages.ContainsKey(packageInfo.Name)) 
-                return;
-
-            var packageQuery = from pkg in packageInfos where pkg.Name == packageInfo.Name select pkg;
-            var package = new Package(packageInfo.Name, packageQuery);
-            Packages[packageInfo.Name] = package;
-
-            OnPackageAdded(package);
-        }
-
         
         public void ClearPackages()
         {
@@ -320,5 +304,36 @@ namespace UnityEditor.PackageManager.UI
             Packages.TryGetValue(name, out package);
             return package;
         }
+
+        private void AddPackageInfos(IEnumerable<PackageInfo> packageInfos)
+        {
+            if (packageInfos == null)
+                packageInfos = Enumerable.Empty<PackageInfo>();
+
+            foreach (var packageInfo in packageInfos.OrderBy(p => p.DisplayName))
+            {
+                AddPackageInfoInternal(packageInfo);
+            }
+
+            OnPackagesChanged(OrderedPackages());
+        }
+
+        private void AddPackageInfoInternal(PackageInfo packageInfo)
+        {
+            packageInfos.Add(packageInfo);
+
+            if (Packages.ContainsKey(packageInfo.Name))
+            {
+                Packages[packageInfo.Name].source = from pkg in packageInfos where pkg.Name == packageInfo.Name select pkg;
+                return;
+            }
+
+            var packageQuery = from pkg in packageInfos where pkg.Name == packageInfo.Name select pkg;
+            var package = new Package(packageInfo.Name, packageQuery);
+            Packages[packageInfo.Name] = package;
+
+            OnPackageAdded(package);
+        }
+
     }
 }

@@ -1,8 +1,8 @@
-﻿using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+﻿using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.PackageManager.UI
-{    
+{
+#if !UNITY_2018_3_OR_NEWER
     internal class PackageSearchFilterTabsFactory : UxmlFactory<PackageSearchFilterTabs>
     {
         protected override PackageSearchFilterTabs DoCreate(IUxmlAttributes bag, CreationContext cc)
@@ -10,9 +10,14 @@ namespace UnityEditor.PackageManager.UI
             return new PackageSearchFilterTabs();
         }
     }
+#endif
 
     internal class PackageSearchFilterTabs : VisualElement
     {
+#if UNITY_2018_3_OR_NEWER
+        internal new class UxmlFactory : UxmlFactory<PackageSearchFilterTabs> { }
+#endif
+
         private readonly VisualElement root;
         private const string SelectedClassName = "selected";
 
@@ -20,7 +25,7 @@ namespace UnityEditor.PackageManager.UI
 
         public PackageSearchFilterTabs()
         {
-            root = Resources.Load<VisualTreeAsset>("Templates/PackageSearchFilterTabs").CloneTree(null);
+            root = Resources.GetTemplate("PackageSearchFilterTabs.uxml");
             Add(root);
             root.StretchToParentSize();
 
@@ -39,25 +44,25 @@ namespace UnityEditor.PackageManager.UI
                 root.SetEnabled(true);
             }
         }
-        
+
         private void OnFilterChanged(PackageFilter filter = PackageFilter.None)
         {
             if (filter == PackageFilter.None)
                 filter = PackageCollection.Instance.Filter;
-            
+
             CurrentFilter = filter;
 
             if (filter == PackageFilter.All)
             {
                 AllButton.AddToClassList(SelectedClassName);
                 LocalButton.RemoveFromClassList(SelectedClassName);
-            } 
+            }
             else if (filter == PackageFilter.Local)
             {
                 LocalButton.AddToClassList(SelectedClassName);
                 AllButton.RemoveFromClassList(SelectedClassName);
             }
-            
+
             root.SetEnabled(true);
         }
 

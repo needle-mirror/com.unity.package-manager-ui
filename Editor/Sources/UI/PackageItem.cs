@@ -1,9 +1,9 @@
-﻿using UnityEngine;
-using UnityEngine.Experimental.UIElements;
+﻿using UnityEngine.Experimental.UIElements;
 using System;
 
 namespace UnityEditor.PackageManager.UI
 {
+#if !UNITY_2018_3_OR_NEWER
     internal class PackageItemFactory : UxmlFactory<PackageItem>
     {
         protected override PackageItem DoCreate(IUxmlAttributes bag, CreationContext cc)
@@ -11,30 +11,35 @@ namespace UnityEditor.PackageManager.UI
             return new PackageItem();
         }
     }
+#endif
 
     internal class PackageItem : VisualElement
     {
+#if UNITY_2018_3_OR_NEWER
+        internal new class UxmlFactory : UxmlFactory<PackageItem> { }
+#endif
+
         public static string SelectedClassName = "selected";
-        
+
         public event Action<PackageItem> OnSelected = delegate { };
-        
-        private const string loadingSpinnerId = "loadingSpinnerContainer";
 
         private readonly VisualElement root;
         private string currentStateClass;
         public Package package { get; private set; }
-        
+
         public PackageItem previousItem;
         public PackageItem nextItem;
 
         public PackageGroup packageGroup;
 
-        public PackageItem(Package package = null)
+        public PackageItem() : this(null)
         {
-            root = Resources.Load<VisualTreeAsset>("Templates/PackageItem").CloneTree(null);
+        }
+
+        public PackageItem(Package package)
+        {
+            root = Resources.GetTemplate("PackageItem.uxml");
             Add(root);
-            
-            root.Q<VisualElement>(loadingSpinnerId).clippingOptions = ClippingOptions.NoClipping;
 
             root.AddManipulator(new Clickable(Select));
             if (package != null)
@@ -42,9 +47,9 @@ namespace UnityEditor.PackageManager.UI
         }
 
         // Package version to display
-        public PackageInfo Display(Package package)
+        internal PackageInfo Display(Package package)
         {
-            return PackageCollection.Instance.Filter == PackageFilter.All || package.Current == null ? package.Latest : package.Current;
+            return package.Current == null ? package.Latest : package.Current;
         }
         
         private void Select()
@@ -57,7 +62,7 @@ namespace UnityEditor.PackageManager.UI
             if (value)
                 PackageContainer.AddToClassList(SelectedClassName);
             else
-                PackageContainer.RemoveFromClassList(SelectedClassName);                
+                PackageContainer.RemoveFromClassList(SelectedClassName);
 
             Spinner.InvertColor = value;
         }
@@ -67,10 +72,9 @@ namespace UnityEditor.PackageManager.UI
             var displayPackage = Display(package);
             if (displayPackage == null)
                 return;
-                            
+            
             this.package = package;
             OnPackageChanged();
-            
             this.package.AddSignal.WhenOperation(OnPackageAdd);
             this.package.RemoveSignal.WhenOperation(OnPackageRemove);
         }
@@ -95,9 +99,12 @@ namespace UnityEditor.PackageManager.UI
 
             NameLabel.text = displayPackage.DisplayName;
             VersionLabel.text = displayPackage.Version.ToString();
-            
-            var stateClass = GetIconStateId(package.Current ?? package.Latest);
-            
+
+            var packageInfo = package.Current ?? package.Latest;
+            var stateClass = GetIconStateId(packageInfo);
+            if (packageInfo.State == PackageState.Outdated && package.LatestUpdate == package.Current)
+                stateClass = GetIconStateId(PackageState.UpToDate);
+
             StateLabel.RemoveFromClassList(currentStateClass);
             StateLabel.AddToClassList(stateClass);
 
@@ -107,7 +114,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageContainer.RemoveFromClassList("not-installed");
 
             UIUtils.SetElementDisplay(VersionLabel, !PackageInfo.IsModule(package.Name));
-            
+
             currentStateClass = stateClass;
             if (displayPackage.State != PackageState.InProgress && Spinner.Started)
                 Spinner.Stop();

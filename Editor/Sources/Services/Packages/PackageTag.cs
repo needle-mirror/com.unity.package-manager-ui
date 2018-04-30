@@ -3,6 +3,6 @@
     internal enum PackageTag
     {
         preview,
-        verified,
+        verified
     }
 }

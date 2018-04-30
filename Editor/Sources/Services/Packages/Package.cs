@@ -4,15 +4,25 @@ using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
-{
+{    
     // History of a single package
     internal class Package : IEquatable<Package>
     {
+        static public bool ShouldProposeLatestVersions
+        {
+            get
+            {
+                // Until we figure out a way to test this properly, alway show standard behavior
+                //    return InternalEditorUtility.IsUnityBeta() && !Unsupported.IsDeveloperMode();
+                return false;
+            }
+        }
+
         internal const string packageManagerUIName = "com.unity.package-manager-ui";
         private readonly string packageName;
-        private readonly IEnumerable<PackageInfo> source;
+        internal IEnumerable<PackageInfo> source;
 
-        public Package(string packageName, IEnumerable<PackageInfo> infos)
+        internal Package(string packageName, IEnumerable<PackageInfo> infos)
         {
             if (string.IsNullOrEmpty(packageName))
                 throw new ArgumentException("Cannot be empty or null", "packageName");
@@ -25,9 +35,86 @@ namespace UnityEditor.PackageManager.UI
         }
 
         public PackageInfo Current { get { return Versions.FirstOrDefault(package => package.IsCurrent); } }
-        public PackageInfo Latest { get { return Versions.FirstOrDefault(package => package.IsLatest) ?? Versions.LastOrDefault(); } }
+        
+        // This is the latest verified or official release (eg: 1.3.2). Not necessarily the latest verified release (eg: 1.2.4) or that latest candidate (eg: 1.4.0-beta)
+        public PackageInfo LatestUpdate
+        {
+            get
+            {
+                // We want to show the absolute latest when in beta mode
+                if (ShouldProposeLatestVersions)
+                    return Latest;
+
+                // Override with current
+                if (Current != null && Current.IsVersionLocked)
+                    return Current;
+
+                // Get verified if higher then current version
+                if (Verified != null)
+                    if (Current != null)
+                        // Give verified if it's later the current version
+                        if (IsAfterCurrentVersion(Verified) || Verified == Current)
+                            return Verified;
+                        else
+                            // Give latest release if it's later then current version, 
+                            // otherwise give latest (including previews)
+                            if (IsAfterCurrentVersion(LatestRelease))
+                                return LatestRelease;
+                            else
+                                return Latest;
+                    else
+                        return Verified;
+
+                // Prioritize showing latest release over latest previews
+                if (LatestRelease != null)
+                {
+                    if (!IsAfterCurrentVersion(LatestRelease))
+                        return Current;
+
+                    return LatestRelease;
+                }
+
+                // Show the absolute latest (including preview)
+                return Latest;
+            }
+        }
+
+        public PackageInfo LatestPatch
+        {
+            get
+            {
+                if (Current == null)
+                    return null;
                 
-        public IEnumerable<PackageInfo> Versions { get { return source.OrderBy(package => package.Version); } }
+                // Get all version that have the same Major/Minor
+                var versions = Versions.Where(package => package.Version.Major == Current.Version.Major && package.Version.Minor == Current.Version.Minor);
+
+                return versions.LastOrDefault();
+            }
+        }
+
+        // This is the very latest version, including pre-releases (eg: 1.4.0-beta).
+        internal PackageInfo Latest { get { return Versions.FirstOrDefault(package => package.IsLatest) ?? Versions.LastOrDefault(); } }
+        
+        // Every version available for this package
+        internal IEnumerable<PackageInfo> Versions { get { return source.OrderBy(package => package.Version); } }
+
+        // Every user visible version available for this package
+        internal IEnumerable<PackageInfo> UserVisibleVersions { get { return Versions.Where(package => package.IsUserVisible); } }
+
+        // Every version that's not a pre-release (eg: not beta/alpha/preview).
+        internal IEnumerable<PackageInfo> ReleaseVersions
+        {
+            get { return Versions.Where(package => !package.IsPreRelease); }
+        }
+        
+        internal PackageInfo LatestRelease { get {return ReleaseVersions.LastOrDefault();}}
+        internal PackageInfo Verified { get {return Versions.FirstOrDefault(package => package.IsVerified);}}
+
+        internal bool IsAfterCurrentVersion(PackageInfo packageInfo) { return Current == null || (packageInfo != null  && packageInfo.Version > Current.Version); }
+
+        internal bool IsBuiltIn {get { return Versions.Any() && Versions.First().Origin == PackageSource.BuiltIn; }}
+
         public string Name { get { return packageName; } }
 
         public bool IsPackageManagerUI
@@ -49,12 +136,12 @@ namespace UnityEditor.PackageManager.UI
         }
         
         [SerializeField]
-        public readonly OperationSignal<IAddOperation> AddSignal = new OperationSignal<IAddOperation>();
+        internal readonly OperationSignal<IAddOperation> AddSignal = new OperationSignal<IAddOperation>();
 
         private Action<PackageInfo> OnAddOperationSuccessEvent;
         private Action OnAddOperationFinalizedEvent;
         
-        public void Add(PackageInfo packageInfo)
+        internal void Add(PackageInfo packageInfo)
         {
             if (packageInfo == Current)
                 return;
@@ -78,15 +165,15 @@ namespace UnityEditor.PackageManager.UI
             operation.AddPackageAsync(packageInfo);
         }
 
-        public void Update()
+        internal void Update()
         {
             Add(Latest);
         }
 
         [SerializeField]
-        public readonly OperationSignal<IRemoveOperation> RemoveSignal = new OperationSignal<IRemoveOperation>();
+        internal readonly OperationSignal<IRemoveOperation> RemoveSignal = new OperationSignal<IRemoveOperation>();
 
-        private Action OnRemoveOperationSuccessEvent;
+        private Action<PackageInfo> OnRemoveOperationSuccessEvent;
         private Action OnRemoveOperationFinalizedEvent;
 
         public void Remove()
@@ -95,7 +182,7 @@ namespace UnityEditor.PackageManager.UI
                 return;
                     
             var operation = OperationFactory.Instance.CreateRemoveOperation();
-            OnRemoveOperationSuccessEvent = () =>
+            OnRemoveOperationSuccessEvent = p =>
             {
                 PackageCollection.Instance.UpdatePackageCollection(true);
             };

@@ -230,5 +230,27 @@ namespace UnityEditor.PackageManager.UI.Tests
             
             PackageCollection.Instance.SetFilter(PackageFilter.All);
         }
+
+        [Test]
+        public void ListPackages_UsesCache()
+        {
+            var packages = PackageSets.Instance.Many(2);
+            PackageCollection.Instance.SetFilter(PackageFilter.Local);                            // Set filter to use list
+            Factory.SearchOperation = new MockSearchOperation(Factory, packages);
+            SetPackages(packages);
+            
+            Assert.IsTrue(PackageCollection.Instance.HasFetchedPackageList());            // Make sure packages are cached
+        }
+
+        [Test]
+        public void SearchPackages_UsesCache()
+        {
+            var packages = PackageSets.Instance.Many(2);
+            PackageCollection.Instance.SetFilter(PackageFilter.All);                                // Set filter to use search
+            Factory.SearchOperation = new MockSearchOperation(Factory, packages);
+            SetPackages(packages);
+            
+            Assert.IsTrue(PackageCollection.Instance.HasFetchedSearchPackages());     // Make sure packages are cached
+        }
     }
 }
