@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI
             if (!showPreviewPackages && PackageManagerPrefs.ShowPreviewPackagesWarning)
             {
                 const string message = "Preview packages are not verified with Unity, may be unstable, and are unsupported in production. Are you sure you want to show preview packages?";
-                if (!EditorUtility.DisplayDialog("", message, "Yes", "No"))
+                if (!EditorUtility.DisplayDialog("Unity Package Manager", message, "Yes", "No"))
                     return;
                 PackageManagerPrefs.ShowPreviewPackagesWarning = false;
             }
@@ -130,7 +130,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void ResetToDefaultsClick()
         {
-            if (!EditorUtility.DisplayDialog("", "Operation will reset all your packages to Editor defaults. Do you want to continue?", "Yes", "No"))
+            if (!EditorUtility.DisplayDialog("Unity Package Manager", "Operation will reset all your packages to Editor defaults. Do you want to continue?", "Yes", "No"))
                 return;
 
             // Registered on callback

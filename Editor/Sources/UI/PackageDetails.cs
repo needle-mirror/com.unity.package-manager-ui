@@ -537,11 +537,11 @@ namespace UnityEditor.PackageManager.UI
                 // Let's not allow updating of the UI if there are build errrors, as for now, that will prevent the UI from reloading properly.
                 if (EditorUtility.scriptCompilationFailed)
                 {
-                    EditorUtility.DisplayDialog("", "The Package Manager UI cannot be updated while there are script compilation errors in your project.  Please fix the errors and try again.", "Ok");
+                    EditorUtility.DisplayDialog("Unity Package Manager", "The Package Manager UI cannot be updated while there are script compilation errors in your project.  Please fix the errors and try again.", "Ok");
                     return;
                 }
 
-                if (!EditorUtility.DisplayDialog("", "Updating this package will close the Package Manager window. You will have to re-open it after the update is done. Do you want to continue?", "Yes", "No"))
+                if (!EditorUtility.DisplayDialog("Unity Package Manager", "Updating this package will close the Package Manager window. You will have to re-open it after the update is done. Do you want to continue?", "Yes", "No"))
                     return;
 
                 if (package.AddSignal.Operation != null)
