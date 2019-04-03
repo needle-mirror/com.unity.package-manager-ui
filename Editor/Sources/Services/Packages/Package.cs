@@ -95,7 +95,10 @@ namespace UnityEditor.PackageManager.UI
 
         // This is the very latest version, including pre-releases (eg: 1.4.0-beta).
         internal PackageInfo Latest { get { return Versions.FirstOrDefault(package => package.IsLatest) ?? Versions.LastOrDefault(); } }
-        
+
+        // Returns the current version if it exist, otherwise returns the latest user visible version.
+        internal PackageInfo VersionToDisplay { get { return Current ?? UserVisibleVersions.LastOrDefault(); } }
+
         // Every version available for this package
         internal IEnumerable<PackageInfo> Versions { get { return source.OrderBy(package => package.Version); } }
 

@@ -4,6 +4,14 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2018-05-14
+- Fixed dropdown to work with 2018.3 editor
+- Updated style to reflect changes in VisualElements
+- Fixed issue on built-in package enable/disable button not shown
+
+## [1.9.9] - 2018-05-09
+- Only show user visible versions in the UI
+
 ## [1.9.8] - 2018-05-01
 - Fixed package to work with 2018.3
 - Deprecated 2018.1 because of its inability to update without error

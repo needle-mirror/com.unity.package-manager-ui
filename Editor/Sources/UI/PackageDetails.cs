@@ -128,7 +128,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (this.package != null && package != null && this.package.Name == package.Name)
             {
-                OnPackageUpdate(Display(package).Info);
+                OnPackageUpdate(package.VersionToDisplay.Info);
             }
         }
 
@@ -136,12 +136,6 @@ namespace UnityEditor.PackageManager.UI
         {
             if (UpdateContainer != null)
                 UIUtils.SetElementDisplay(UpdateContainer, value);
-        }
-
-        // Package version to display
-        internal PackageInfo Display(Package package)
-        {
-            return package.Current == null ? package.Latest : package.Current;
         }
 
         private void OnFilterChanged(PackageFilter obj)
@@ -353,8 +347,9 @@ namespace UnityEditor.PackageManager.UI
             }
 
             this.package = package;
-            ResetVersionItems(Display(package));
-            SetDisplayPackage(Display(package));
+            var displayPackage = package != null ? package.VersionToDisplay : null;
+            ResetVersionItems(displayPackage);
+            SetDisplayPackage(displayPackage);
         }
 
         private void SetError(Error error)
@@ -526,7 +521,7 @@ namespace UnityEditor.PackageManager.UI
             VersionPopup.SetEnabled(enableVersionButton);
             button.text = GetButtonText(action, inprogress, version);
 
-            UIUtils.SetElementDisplay(UpdateBuiltIn, isBuiltIn);
+            UIUtils.SetElementDisplay(UpdateBuiltIn, isBuiltIn && action != PackageAction.Update);
             UIUtils.SetElementDisplay(UpdateCombo, !isBuiltIn);
             UIUtils.SetElementDisplay(UpdateButton, !isBuiltIn);
         }
@@ -559,7 +554,7 @@ namespace UnityEditor.PackageManager.UI
                     enableButton = false;
                 }
 
-                if (package.Current.IsVersionLocked)
+                if (package.Current.IsVersionLocked && current.Origin != PackageSource.BuiltIn)
                 {
                     enableButton = false;
                     visibleFlag = false;
