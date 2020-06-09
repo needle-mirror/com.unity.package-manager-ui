@@ -333,15 +333,7 @@
 #detailListView #headerTitle {
   flex: 1 0 0;
   font-size: 12;
-  -unity-font-style: bold;
   color: #000000;
-}
-#detailListView #headerCaret {
-  flex: 0 0 auto;
-  font-size: 12;
-  -unity-font-style: bold;
-  color: #000000;
-  min-width: 16;
 }
 #detailListView #spinnerContainer {
   -unity-position: absolute;
@@ -469,21 +461,38 @@
   flex-direction: row;
   align-items: center;
   border-color: rgba(0, 0, 0, 0.5);
+  background-color: #D5D5D5;
+  border-bottom-width: 1px;
+}
+#detailListView #packageListGroup #groupContainerOuter #headerContainer #headerCaret {
+  flex: 0 0 auto;
+  font-size: 10px;
+  -unity-font-style: bold;
+  color: #646464;
+  width: 16px;
+  padding-top: 3;
+  padding-left: 5;
+  padding-bottom: 3;
+  padding-right: 0;
 }
 #detailListView #packageListGroup #groupContainerOuter #headerContainer #headerTitle {
-  height: 0;
+  color: #000000;
   margin-top: 0;
   margin-left: 0;
   margin-bottom: 0;
   margin-right: 0;
-  padding-top: 0;
-  padding-left: 0;
-  padding-bottom: 0;
+  padding-top: 3;
+  padding-left: 2;
+  padding-bottom: 3;
   padding-right: 0;
   border-top-width: 0;
   border-left-width: 0;
   border-bottom-width: 0;
   border-right-width: 0;
+}
+#detailListView #packageListGroup #groupContainerOuter #headerContainer.hidden {
+  height: 0;
+  width: 0;
 }
 #detailListView #packageListGroup #groupContainerOuter #groupContainer {
   margin-top: 0;
@@ -507,6 +516,40 @@
 #detailListView #packageListGroup #noResult #noResultText {
   -unity-word-wrap: true;
 }
+#detailListView PackageGroup.collapsed PackageItem.unselected {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 0;
+  width: 0;
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  min-width: 0;
+  max-width: 0;
+  border-top-width: 0;
+  border-left-width: 0;
+  border-bottom-width: 0;
+  border-right-width: 0;
+  border-top-width: 0;
+  border-left-width: 0;
+  border-bottom-width: 0;
+  border-right-width: 0;
+  padding-top: 0;
+  padding-left: 0;
+  padding-bottom: 0;
+  padding-right: 0;
+  margin-top: 0;
+  margin-left: 0;
+  margin-bottom: 0;
+  margin-right: 0;
+}
+#detailListView PackageItem.selected .package {
+  background-color: #3e7de7;
+  color: #f4f4f4;
+}
+#detailListView PackageItem.selected .package #packageName, #detailListView PackageItem.selected .package #packageVersion {
+  color: #f4f4f4;
+}
 #detailListView .package {
   flex: 1 0 0;
   flex-direction: row;
@@ -517,13 +560,6 @@
   margin-right: 0;
   border-color: rgba(0, 0, 0, 0.5);
   border-bottom-width: 1;
-}
-#detailListView .package.selected {
-  background-color: #3e7de7;
-  color: #f4f4f4;
-}
-#detailListView .package.selected #packageName, #detailListView .package.selected #packageVersion {
-  color: #f4f4f4;
 }
 #detailListView .package .status {
   flex: 0 0 14;
@@ -548,7 +584,7 @@
   background-image: none;
 }
 #detailListView .package .status.error {
-  background-image: resource("Images/Dark/error");
+  background-image: resource("Images/Light/error");
 }
 #detailListView .package .name {
   flex: 1 0 0;
@@ -768,6 +804,47 @@
   font-size: 12;
   -unity-word-wrap: true;
 }
+#detailListView #detailView .detail #detailWarning {
+  flex: 1 0 0;
+  flex-direction: row;
+  text-color: #BDBDBD;
+  background-color: rgba(96, 96, 96, 0.2);
+  border-top-width: 1;
+  border-left-width: 1;
+  border-bottom-width: 1;
+  border-right-width: 1;
+  margin-top: 4;
+  margin-bottom: 4;
+  border-color: #232323;
+}
+#detailListView #detailView .detail #detailWarning #warningIcon {
+  flex: auto 0 0;
+  background-image: resource("Images/Light/info");
+  min-width: 30;
+  min-height: 30;
+  max-width: 30;
+  max-height: 30;
+  margin-top: 4;
+  margin-left: 4;
+  margin-bottom: 4;
+  margin-right: 4;
+}
+#detailListView #detailView .detail #detailWarning #warningMessage {
+  flex: 1 0 0;
+  flex-direction: column;
+}
+#detailListView #detailView .detail #detailWarning #warningMessage Label {
+  margin-top: 4;
+  margin-bottom: 0;
+  -unity-word-wrap: true;
+  font-size: 12;
+}
+#detailListView #detailView .detail #detailWarning #warningMessage Button {
+  margin-top: 0;
+  margin-bottom: 4;
+  -unity-text-align: middle-left;
+  font-size: 9;
+}
 #detailListView #detailView .detail #detailCategory {
   flex: 1 0 0;
   font-size: 12;
@@ -887,7 +964,7 @@
   margin-left: 2;
 }
 #detailListView #statusBarContainer #loadingContainer #loadingIcon {
-  background-image: resource("Images/Dark/error");
+  background-image: resource("Images/Light/error");
   width: 16;
   height: 16;
   margin-left: -12;

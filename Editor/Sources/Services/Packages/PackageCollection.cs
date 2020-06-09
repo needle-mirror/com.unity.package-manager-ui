@@ -8,23 +8,31 @@ namespace UnityEditor.PackageManager.UI
     [Serializable]
     internal class PackageCollection
     {
+        private const string k_UnityPackage = "Unity";
+
         private static PackageCollection instance = new PackageCollection();
         public static PackageCollection Instance { get { return instance; } }
 
-        public event Action<IEnumerable<Package>> OnPackagesChanged = delegate { };
-        public event Action<PackageFilter> OnFilterChanged = delegate { };
+        public event Action<IEnumerable<Package>> OnPackagesChanged = delegate {};
+        public event Action<PackageFilter> OnFilterChanged = delegate {};
 
         private readonly Dictionary<string, Package> packages;
 
         private PackageFilter filter;
 
         private string selectedListPackage;
-        private string selectedSearchPackage;
+        private string selectedSearchUnityPackage;
+        private string selectedSearchOtherPackage;
+
+        private List<string> collapsedListGroups;
+        private List<string> collapsedSearchUnityGroups;
+        private List<string> collapsedSearchOtherGroups;
 
         internal string lastUpdateTime;
         private List<PackageInfo> listPackagesOffline;
         private List<PackageInfo> listPackages;
-        private List<PackageInfo> searchPackages;
+        private List<PackageInfo> searchUnityPackages;
+        private List<PackageInfo> searchOtherPackages;
 
         private List<PackageError> packageErrors;
 
@@ -48,8 +56,8 @@ namespace UnityEditor.PackageManager.UI
             {
                 value = instance;
 
-                Instance.OnPackagesChanged = delegate { };
-                Instance.OnFilterChanged = delegate { };
+                Instance.OnPackagesChanged = delegate {};
+                Instance.OnFilterChanged = delegate {};
                 Instance.SearchSignal.ResetEvents();
                 Instance.ListSignal.ResetEvents();
 
@@ -73,13 +81,25 @@ namespace UnityEditor.PackageManager.UI
         public PackageFilter Filter
         {
             get { return filter; }
-            
+
             // For public usage, use SetFilter() instead
             private set
             {
                 var changed = value != filter;
+                if (changed)
+                {
+                    var selectedPackageName = SelectedPackage;
+                    Package package;
+                    if (!string.IsNullOrEmpty(selectedPackageName) && packages.TryGetValue(selectedPackageName, out package))
+                    {
+                        var groupName = GetGroupName(package);
+                        if (CollapsedGroups.Contains(groupName))
+                            CollapsedGroups.Remove(groupName);
+                    }
+                }
+
                 filter = value;
-                
+
                 if (changed)
                     OnFilterChanged(filter);
             }
@@ -87,30 +107,84 @@ namespace UnityEditor.PackageManager.UI
 
         public List<PackageInfo> LatestListPackages
         {
-            get { return listPackagesVersion > listPackagesOfflineVersion? listPackages : listPackagesOffline; }
+            get { return listPackagesVersion > listPackagesOfflineVersion ? listPackages : listPackagesOffline; }
         }
 
-        public List<PackageInfo> LatestSearchPackages { get { return searchPackages; } }
+        public List<PackageInfo> LatestSearchUnityPackages { get { return searchUnityPackages; } }
+
+        public List<PackageInfo> LatestSearchOtherPackages { get { return searchOtherPackages; } }
 
         public string SelectedPackage
         {
-            get { return PackageFilter.All == Filter ? selectedSearchPackage : selectedListPackage; }
+            get
+            {
+                switch (Filter)
+                {
+                    case PackageFilter.Unity:
+                        return selectedSearchUnityPackage;
+                    case PackageFilter.Other:
+                        return selectedSearchOtherPackage;
+                    default:
+                        return selectedListPackage;
+                }
+            }
             set
             {
-                if (PackageFilter.All == Filter)
-                    selectedSearchPackage = value;
-                else
-                    selectedListPackage = value;
+                switch (Filter)
+                {
+                    case PackageFilter.Unity:
+                        selectedSearchUnityPackage = value;
+                        break;
+                    case PackageFilter.Other:
+                        selectedSearchOtherPackage = value;
+                        break;
+                    default:
+                        selectedListPackage = value;
+                        break;
+                }
             }
         }
-        
+
+        public List<string> CollapsedGroups
+        {
+            get
+            {
+                switch (Filter)
+                {
+                    case PackageFilter.Unity:
+                        return collapsedSearchUnityGroups;
+                    case PackageFilter.Other:
+                        return collapsedSearchOtherGroups;
+                    case PackageFilter.Local:
+                        return collapsedListGroups;
+                    default:
+                        return new List<string>();
+                }
+            }
+        }
+
+        public static string GetGroupName(Package package)
+        {
+            if (package.IsBuiltIn)
+                return PackageGroupOrigins.BuiltInPackages.ToString();
+            else if (package.IsUnityPackage)
+                return k_UnityPackage;
+            else
+                return package.Latest != null ? package.Latest.Author : package.Current.Author;
+        }
+
         private PackageCollection()
         {
             packages = new Dictionary<string, Package>();
 
             listPackagesOffline = new List<PackageInfo>();
             listPackages = new List<PackageInfo>();
-            searchPackages = new List<PackageInfo>();
+            searchUnityPackages = new List<PackageInfo>();
+            searchOtherPackages = new List<PackageInfo>();
+
+            collapsedListGroups = new List<string>();
+            collapsedSearchUnityGroups = new List<string>();
+            collapsedSearchOtherGroups = new List<string>();
 
             packageErrors = new List<PackageError>();
 
@@ -121,14 +195,14 @@ namespace UnityEditor.PackageManager.UI
             listOperationOngoing = false;
             listOperationOfflineOngoing = false;
 
-            Filter = PackageFilter.All;
+            Filter = PackageFilter.Unity;
         }
 
         public bool SetFilter(PackageFilter value, bool refresh = true)
         {
-            if (value == Filter) 
+            if (value == Filter)
                 return false;
-            
+
             Filter = value;
             if (refresh)
             {
@@ -188,7 +262,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal void FetchSearchCache(bool forceRefetch = false)
         {
-            if (!forceRefetch && (searchOperationOngoing || searchPackages.Any())) return;
+            if (!forceRefetch && (searchOperationOngoing || searchUnityPackages.Any() || searchOtherPackages.Any())) return;
             if (searchOperation != null)
                 searchOperation.Cancel();
             searchOperationOngoing = true;
@@ -221,12 +295,20 @@ namespace UnityEditor.PackageManager.UI
 
         private void UpdateSearchPackageInfos(IEnumerable<PackageInfo> newInfos)
         {
-            searchPackages = newInfos.Where(p => p.IsUserVisible).ToList();
+            searchUnityPackages = newInfos.Where(p => p.IsUserVisible && p.IsUnityPackage).ToList();
+            searchOtherPackages = newInfos.Where(p => p.IsUserVisible && !p.IsUnityPackage).ToList();
+            if (!searchOtherPackages.Any() && Filter == PackageFilter.Other)
+            {
+                SetFilter(PackageFilter.Unity);
+            }
         }
 
         private IEnumerable<Package> OrderedPackages()
         {
-            return packages.Values.OrderBy(pkg => pkg.Versions.LastOrDefault() == null ? pkg.Name : pkg.Versions.Last().DisplayName).AsEnumerable();
+            return packages.Values.OrderByDescending(pkg => pkg.IsUnityPackage).
+                ThenBy(pkg => pkg.VersionToDisplay.Author == "Other").
+                ThenBy(pkg => pkg.VersionToDisplay.Author).
+                ThenBy(pkg => pkg.Versions.LastOrDefault() == null ? pkg.Name : pkg.Versions.Last().DisplayName);
         }
 
         public Package GetPackageByName(string name)
@@ -255,12 +337,20 @@ namespace UnityEditor.PackageManager.UI
             packageErrors.RemoveAll(p => p.PackageName == package.Name);
         }
 
+        public void ResetExpandedGroups()
+        {
+            collapsedListGroups = new List<string>();
+            collapsedSearchUnityGroups = new List<string>();
+            collapsedSearchOtherGroups = new List<string>();
+        }
+
         private void RebuildPackageDictionary()
         {
             // Merge list & search packages
             var allPackageInfos = new List<PackageInfo>(LatestListPackages);
             var installedPackageIds = new HashSet<string>(allPackageInfos.Select(p => p.PackageId));
-            allPackageInfos.AddRange(searchPackages.Where(p => !installedPackageIds.Contains(p.PackageId)));
+            allPackageInfos.AddRange(searchUnityPackages.Where(p => !installedPackageIds.Contains(p.PackageId)));
+            allPackageInfos.AddRange(searchOtherPackages.Where(p => !installedPackageIds.Contains(p.PackageId)));
 
             if (!PackageManagerPrefs.ShowPreviewPackages)
             {

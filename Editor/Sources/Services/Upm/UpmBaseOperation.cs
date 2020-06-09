@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,9 +7,15 @@ using UnityEngine;
 using UnityEditor.PackageManager.Requests;
 
 namespace UnityEditor.PackageManager.UI
-{    
+{
     internal abstract class UpmBaseOperation : IBaseOperation
     {
+        private static readonly string[] s_WhitelistedUnityPackages =
+        {
+            "com.havok.physics",
+            "com.ptc.vuforia.engine"
+        };
+
         public static string GroupName(PackageSource origin)
         {
             var group = PackageGroupOrigins.Packages.ToString();
@@ -19,20 +25,23 @@ namespace UnityEditor.PackageManager.UI
             return group;
         }
 
-        protected static IEnumerable<PackageInfo> FromUpmPackageInfo(PackageManager.PackageInfo info, bool isCurrent=true)
+        protected static IEnumerable<PackageInfo> FromUpmPackageInfo(PackageManager.PackageInfo info, bool isCurrent = true)
         {
             var packages = new List<PackageInfo>();
             var displayName = info.displayName;
             if (string.IsNullOrEmpty(displayName))
             {
                 displayName = info.name.Replace("com.unity.modules.", "");
-                displayName = displayName.Replace("com.unity.", "");
+                if (displayName.StartsWith("com.")) displayName = displayName.Replace("com.", "");
+                if (displayName.StartsWith("unity.")) displayName = displayName.Replace("unity.", "");
                 displayName = new CultureInfo("en-US").TextInfo.ToTitleCase(displayName);
             }
 
             string author = info.author.name;
-            if (string.IsNullOrEmpty(info.author.name) && info.name.StartsWith("com.unity."))
+            if (info.name.StartsWith("com.unity.") || s_WhitelistedUnityPackages.Any(name => info.name == name))
                 author = "Unity Technologies Inc.";
+            if (string.IsNullOrEmpty(author))
+                author = "Other";
 
             var lastCompatible = info.versions.latestCompatible;
             var versions = new List<string>();
@@ -44,7 +53,7 @@ namespace UnityEditor.PackageManager.UI
                 versions.Sort((left, right) =>
                 {
                     if (left == null || right == null) return 0;
-                    
+
                     SemVersion leftVersion = left;
                     SemVersion righVersion = right;
                     return leftVersion.CompareByPrecedence(righVersion);
@@ -54,7 +63,7 @@ namespace UnityEditor.PackageManager.UI
                 if (!string.IsNullOrEmpty(lastCompatible))
                 {
                     SemVersion lastCompatibleVersion =
-                        string.IsNullOrEmpty(lastCompatible) ? (SemVersion) null : lastCompatible;
+                        string.IsNullOrEmpty(lastCompatible) ? (SemVersion)null : lastCompatible;
                     if (packageVersion != null && string.IsNullOrEmpty(packageVersion.Prerelease) &&
                         packageVersion.CompareByPrecedence(lastCompatibleVersion) > 0)
                         lastCompatible = info.version;
@@ -66,17 +75,18 @@ namespace UnityEditor.PackageManager.UI
                 }
             }
 
-            foreach(var version in versions)
+            foreach (var version in versions)
             {
                 var isVersionCurrent = version == info.version && isCurrent;
                 var isBuiltIn = info.source == PackageSource.BuiltIn;
                 var isVerified = string.IsNullOrEmpty(SemVersion.Parse(version).Prerelease) && version == info.versions.recommended;
-                var state = (isBuiltIn || info.version == lastCompatible || !isCurrent ) ? PackageState.UpToDate : PackageState.Outdated;
-                
+                var isUnityPackage = info.name.StartsWith("com.unity.") || s_WhitelistedUnityPackages.Any(name => info.name == name);
+                var state = (isBuiltIn || info.version == lastCompatible ||   !isCurrent) ? PackageState.UpToDate : PackageState.Outdated;
+
                 // Happens mostly when using a package that hasn't been in production yet.
                 if (info.versions.all.Length <= 0)
                     state = PackageState.UpToDate;
-                
+
                 if (info.errors.Length > 0)
                     state = PackageState.Error;
 
@@ -96,27 +106,28 @@ namespace UnityEditor.PackageManager.UI
                     State = state,
                     Origin = isBuiltIn || isVersionCurrent ? info.source : PackageSource.Registry,
                     Author = author,
-                    Info = info
+                    Info = info,
+                    IsUnityPackage = isUnityPackage
                 };
-                
+
                 packages.Add(packageInfo);
             }
 
             return packages;
         }
-        
-        public static event Action<UpmBaseOperation> OnOperationStart = delegate { };
 
-        public event Action<Error> OnOperationError = delegate { };
-        public event Action OnOperationFinalized = delegate { };
-        
+        public static event Action<UpmBaseOperation> OnOperationStart = delegate {};
+
+        public event Action<Error> OnOperationError = delegate {};
+        public event Action OnOperationFinalized = delegate {};
+
         public Error ForceError { get; set; }                // Allow external component to force an error on the requests (eg: testing)
         public Error Error { get; protected set; }        // Keep last error
-        
+
         public bool IsCompleted { get; private set; }
 
         protected abstract Request CreateRequest();
-        
+
         [SerializeField]
         protected Request CurrentRequest;
         public readonly ThreadedDelay Delay = new ThreadedDelay();
@@ -147,12 +158,12 @@ namespace UnityEditor.PackageManager.UI
             {
                 CurrentRequest = CreateRequest();
             }
-            
+
             // Since CurrentRequest's error property is private, we need to simulate
             // an error instead of just setting it.
             if (TryForcedError())
                 return;
-            
+
             if (CurrentRequest.IsCompleted)
             {
                 if (CurrentRequest.Status == StatusCode.Success)
@@ -173,14 +184,14 @@ namespace UnityEditor.PackageManager.UI
                 var message = "Cannot perform upm operation.";
                 if (error != null)
                     message = "Cannot perform upm operation: " + Error.message + " [" + Error.errorCode + "]";
-                
+
                 Debug.LogError(message);
 
                 OnOperationError(Error);
             }
             catch (Exception exception)
             {
-                Debug.LogError("Package Manager Window had an error while reporting an error in an operation: " + exception);                
+                Debug.LogError("Package Manager Window had an error while reporting an error in an operation: " + exception);
             }
 
             FinalizeOperation();
@@ -210,8 +221,8 @@ namespace UnityEditor.PackageManager.UI
         public void Cancel()
         {
             EditorApplication.update -= Progress;
-            OnOperationError = delegate { };
-            OnOperationFinalized = delegate { };
+            OnOperationError = delegate {};
+            OnOperationFinalized = delegate {};
             IsCompleted = true;
         }
 

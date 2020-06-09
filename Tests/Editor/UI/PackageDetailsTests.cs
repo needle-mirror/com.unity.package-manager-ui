@@ -22,14 +22,14 @@ namespace UnityEditor.PackageManager.UI.Tests
         {
             var packageInfo = PackageSets.Instance.Single();
             foreach (var tag in new List<string>
-            {
-                PackageTag.preview.ToString(),
-                PackageTag.verified.ToString(),
-                "usertag"        // Any other unsupported tag a user might use
-            })
+                 {
+                     PackageTag.preview.ToString(),
+                     PackageTag.verified.ToString(),
+                     "usertag"   // Any other unsupported tag a user might use
+                 })
             {
                 packageInfo.IsVerified = PackageTag.verified.ToString() == tag;
-                packageInfo.Version = packageInfo.Version.Change(null, null, null, tag);            
+                packageInfo.Version = packageInfo.Version.Change(null, null, null, tag);
                 var package = new Package(packageInfo.Name, new List<PackageInfo> {packageInfo});
                 var details = Container.Q<PackageDetails>("detailsGroup");
                 details.SetPackage(package);
@@ -58,7 +58,7 @@ namespace UnityEditor.PackageManager.UI.Tests
         {
             SetListPackages(new List<PackageInfo> {PackageSets.Instance.Single(PackageSource.Registry, "name", "1.0.0", false)});
 
-            PackageCollection.Instance.SetFilter(PackageFilter.All);
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity);
 
             var details = Container.Q<PackageDetails>("detailsGroup");
             Assert.IsTrue(details.UpdateButton.text == PackageDetails.PackageActionVerbs[(int)PackageDetails.PackageAction.Add]);
@@ -69,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Tests
         [Test]
         public void Show_CorrectLabel_UpdateTo()
         {
-            SetListPackages(new List<PackageInfo> 
+            SetListPackages(new List<PackageInfo>
             {
                 PackageSets.Instance.Single(PackageSource.Registry, "name", "1.0.0", true),
                 PackageSets.Instance.Single(PackageSource.Registry, "name", "2.0.0", false)
@@ -80,11 +80,11 @@ namespace UnityEditor.PackageManager.UI.Tests
             Assert.IsTrue(details.UpdateButton.enabledSelf);
             Assert.IsTrue(details.VersionPopup.enabledSelf);
         }
-        
+
         [Test]
         public void Show_HideLabel_Embedded()
         {
-            SetListPackages(new List<PackageInfo> 
+            SetListPackages(new List<PackageInfo>
             {
                 PackageSets.Instance.Single(PackageSource.Embedded, "name", "1.0.0", true),
                 PackageSets.Instance.Single(PackageSource.Registry, "name", "2.0.0", false)
@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             Assert.IsFalse(details.UpdateCombo.visible);
             Assert.IsFalse(details.UpdateButton.visible);
         }
-        
+
         [Test]
         public void Show_CorrectLabel_LocalFolder()
         {
@@ -106,7 +106,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             Assert.IsFalse(details.UpdateButton.enabledSelf);
             Assert.IsTrue(details.VersionPopup.enabledSelf);
         }
-        
+
         [Test]
         public void Show_CorrectLabel_Git()
         {
@@ -117,6 +117,5 @@ namespace UnityEditor.PackageManager.UI.Tests
             Assert.IsFalse(details.UpdateButton.enabledSelf);
             Assert.IsFalse(details.VersionPopup.enabledSelf);
         }
-        
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -18,8 +18,8 @@ namespace UnityEditor.PackageManager.UI.Tests
         }
 
         private static readonly string[] Words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "consectetuer",
-            "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod",
-            "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
+                                                         "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod",
+                                                         "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
 
         private static string LoremIpsum(int numParagraphs, int minSentences, int maxSentences, int minWords, int maxWords)
         {
@@ -41,14 +41,14 @@ namespace UnityEditor.PackageManager.UI.Tests
                         {
                             if (w == 0)
                             {
-                                var firstWord = Words [Random.Next (Words.Length)];
-                                firstWord = char.ToUpper (firstWord [0]) + firstWord.Substring (1);
-                                result.Append (firstWord);
+                                var firstWord = Words[Random.Next(Words.Length)];
+                                firstWord = char.ToUpper(firstWord[0]) + firstWord.Substring(1);
+                                result.Append(firstWord);
                             }
                             else
                             {
-                                result.Append (" ");
-                                result.Append (Words [Random.Next (Words.Length)]);
+                                result.Append(" ");
+                                result.Append(Words[Random.Next(Words.Length)]);
                             }
                         }
                     }
@@ -63,13 +63,13 @@ namespace UnityEditor.PackageManager.UI.Tests
 
         private int _count = 0;
 
-        public PackageInfo Single(string name = null, string version = null)
+        public PackageInfo Single(string name = null, string version = null, bool useUnityPackageName = true)
         {
             var type = Random.NextDouble() > 0.5 ? PackageSource.Unknown : PackageSource.Registry;
-            return Single(type, name, version);
+            return Single(type, name, version, true, false, useUnityPackageName);
         }
 
-        public PackageInfo Single(PackageSource type, string name = null, string version = null, bool isCurrent = true, bool isVerified = false)
+        public PackageInfo Single(PackageSource type, string name = null, string version = null, bool isCurrent = true, bool isVerified = false, bool useUnityPackageName = true)
         {
             if (name == null)
                 name = RandomString(Random.Next(5, 10));
@@ -81,18 +81,20 @@ namespace UnityEditor.PackageManager.UI.Tests
             }
 
             var group = UpmBaseOperation.GroupName(type);
+            var packageName = useUnityPackageName ? string.Format("com.unity.{0}", name) : string.Format("com.other.{0}", name);
             var package = new PackageInfo
             {
                 DisplayName = char.ToUpper(name[0]) + name.Substring(1),
-                Name = string.Format("com.unity.{0}", name),
-                Description = LoremIpsum(Random.Next(3,5), 2, 10, 5, 20),
-                PackageId = string.Format("com.unity.{0}@{1}", name, version),
+                Name = packageName,
+                Description = LoremIpsum(Random.Next(3, 5), 2, 10, 5, 20),
+                PackageId = string.Format("{0}@{1}", packageName, version),
                 State = PackageState.UpToDate,
                 Group = group,
                 Version = version,
                 IsVerified = isVerified,
                 IsCurrent = isCurrent,
                 IsLatest = false,
+                IsUnityPackage = useUnityPackageName,
                 Origin = type,
                 Category = null,
                 Errors = new List<Error>()
@@ -103,17 +105,17 @@ namespace UnityEditor.PackageManager.UI.Tests
             return package;
         }
 
-        public List<PackageInfo> Many(int count, bool onlyPackageGroup = false)
+        public List<PackageInfo> Many(int count, bool onlyPackageGroup = false, bool useUnityPackageName = true)
         {
-            return Many(null, count, onlyPackageGroup);
+            return Many(null, count, onlyPackageGroup, useUnityPackageName);
         }
 
-        public List<PackageInfo> Many(string name, int count, bool onlyPackageGroup = false)
+        public List<PackageInfo> Many(string name, int count, bool onlyPackageGroup = false, bool useUnityPackageName = true)
         {
             var packages = new List<PackageInfo>();
             for (var i = 0; i < count; i++)
             {
-                var package = Single(name);
+                var package = Single(name, null, useUnityPackageName);
                 packages.Add(package);
             }
 
@@ -179,6 +181,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                     Group = PackageGroupOrigins.Packages.ToString(),
                     IsCurrent = true,
                     IsLatest = true,
+                    IsUnityPackage = true,
                     Errors = new List<Error>()
                 };
                 packages.Add(package);
@@ -197,6 +200,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                     Group = PackageGroupOrigins.Packages.ToString(),
                     IsCurrent = true,
                     IsLatest = true,
+                    IsUnityPackage = true,
                     Errors = new List<Error>()
                 };
                 packages.Add(package);
@@ -215,6 +219,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                     Group = PackageGroupOrigins.Packages.ToString(),
                     IsCurrent = true,
                     IsLatest = true,
+                    IsUnityPackage = true,
                     Errors = new List<Error>()
                 };
                 packages.Add(package);
@@ -233,6 +238,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                     Group = PackageGroupOrigins.Packages.ToString(),
                     IsCurrent = true,
                     IsLatest = true,
+                    IsUnityPackage = true,
                     Errors = new List<Error>()
                 };
                 packages.Add(package);
@@ -251,6 +257,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                     Group = PackageGroupOrigins.Packages.ToString(),
                     IsCurrent = true,
                     IsLatest = true,
+                    IsUnityPackage = true,
                     Errors = new List<Error>()
                 };
                 packages.Add(package);

@@ -341,16 +341,7 @@ $toolbar-height: 18;
 	#headerTitle {
 		flex: 1 0 0;
 		font-size: 12;
-		-unity-font-style: bold;
 		color: $unity-text-color;
-	}
-
-	#headerCaret {
-		flex: 0 0 auto;
-		font-size: 12;
-		-unity-font-style: bold;
-		color: $unity-text-color;
-		min-width: 16;
 	}
 
 	#spinnerContainer {
@@ -459,18 +450,35 @@ $toolbar-height: 18;
 				flex-direction: row;
 				align-items: center;
 				border-color: rgba(0,0,0, 0.5);
+				background-color: $group-background-color;
+				border-bottom-width: 1px;
+
+				#headerCaret {
+					flex: 0 0 auto;
+					font-size: 10px;
+					-unity-font-style: bold;
+					color: $caret-text-color;
+					width: 16px;
+					@include padding(3, 0, 3, 5);
+				}
 
 				#headerTitle {
-					height: 0;
+					color: $group-text-color;
 					@include margin-box(0);
-					@include padding-box(0);
+					@include padding(3, 0, 3, 2);
 					@include border-box(0);
+				}
+
+				&.hidden {
+					height: 0;
+					width: 0;
 				}
 			}
 
 			#groupContainer {
 				@include margin(0, 0, 0, 0);
 			}
+			
 		}
 
 		#packageList, #listContainer, #listGroups {
@@ -508,6 +516,36 @@ $toolbar-height: 18;
 	//--------------------------------------------------------------------------------------------------
 	// Package Item
 	//--------------------------------------------------------------------------------------------------
+	PackageGroup.collapsed {
+		PackageItem.unselected {
+			position: absolute;
+			overflow: hidden;
+			border-radius: 0;
+			width: 0;
+			height: 0;
+			min-height: 0;
+			max-height: 0;
+			min-width: 0;
+			max-width: 0;
+			border-top-width: 0;
+			border-left-width: 0;
+			border-bottom-width: 0;
+			border-right-width: 0;
+			@include border-box(0);
+			@include padding-box(0);
+			@include margin-box(0);
+		}
+	}
+
+	PackageItem.selected {
+		.package {
+			@include selected-element();
+			#packageName, #packageVersion {
+				color: $unity-text-color-highlight;
+			}
+		}
+	}
+	
 	.package {
 		flex: 1 0 0;
 		flex-direction: row;
@@ -515,14 +553,6 @@ $toolbar-height: 18;
 		@include margin(0, 0, 0, 0);
 		border-color: rgba(0,0,0, 0.5);
 		border-bottom-width: 1;
-
-		&.selected {
-			@include selected-element();
-
-			#packageName, #packageVersion {
-				color: $unity-text-color-highlight;
-			}
-		}
 
 		.status {
 			flex: 0 0 14;
@@ -736,6 +766,44 @@ $toolbar-height: 18;
 				flex: 1 0 0;
 				@include font-normal();
 				-unity-word-wrap: true;
+			}
+
+			#detailWarning {
+				flex: 1 0 0;
+				flex-direction: row;
+				text-color: #BDBDBD;
+				background-color: rgba(96, 96, 96, 0.20);
+				@include border-box(1);
+				@include margin(4, auto, 4, auto);
+				border-color: #232323;
+
+				#warningIcon
+				{
+					flex: auto 0 0;
+					background-image: $background-info;
+					min-width: 30;
+					min-height: 30;
+					max-width: 30;
+					max-height: 30;
+					@include margin(4, 4, 4, 4);
+				}
+
+				#warningMessage
+				{
+					flex: 1 0 0;
+					flex-direction: column;
+
+					Label {
+						@include margin(4, auto, 0, auto);
+						-unity-word-wrap: true;
+						@include font-normal();
+					}
+					Button {
+						@include margin(0, auto, 4, auto);
+						-unity-text-align: middle-left;
+						@include font-small();
+					}
+				}
 			}
 
 			#detailCategory {

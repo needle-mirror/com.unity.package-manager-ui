@@ -1,4 +1,4 @@
-﻿using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements;
 using System;
 
 namespace UnityEditor.PackageManager.UI
@@ -16,19 +16,18 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageItem : VisualElement
     {
 #if UNITY_2018_3_OR_NEWER
-        internal new class UxmlFactory : UxmlFactory<PackageItem> { }
+        internal new class UxmlFactory : UxmlFactory<PackageItem> {}
 #endif
 
         public static string SelectedClassName = "selected";
+        public static string UnselectedClassName = "unselected";
 
-        public event Action<PackageItem> OnSelected = delegate { };
+        public event Action<PackageItem> OnSelected = delegate {};
 
         private readonly VisualElement root;
         private string currentStateClass;
+        public bool isSelected;
         public Package package { get; private set; }
-
-        public PackageItem previousItem;
-        public PackageItem nextItem;
 
         public PackageGroup packageGroup;
 
@@ -42,7 +41,10 @@ namespace UnityEditor.PackageManager.UI
             Add(root);
 
             root.AddManipulator(new Clickable(Select));
+            SetSelected(false);
             SetItem(package);
+
+            NameLabel.ShowTextTooltipOnSizeChange();
         }
 
         private void Select()
@@ -53,11 +55,18 @@ namespace UnityEditor.PackageManager.UI
         public void SetSelected(bool value)
         {
             if (value)
-                PackageContainer.AddToClassList(SelectedClassName);
+            {
+                RemoveFromClassList(UnselectedClassName);
+                AddToClassList(SelectedClassName);
+            }
             else
-                PackageContainer.RemoveFromClassList(SelectedClassName);
+            {
+                RemoveFromClassList(SelectedClassName);
+                AddToClassList(UnselectedClassName);
+            }
 
             Spinner.InvertColor = value;
+            isSelected = value;
         }
 
         private void SetItem(Package package)
@@ -65,7 +74,7 @@ namespace UnityEditor.PackageManager.UI
             var displayPackage = package != null ? package.VersionToDisplay : null;
             if (displayPackage == null)
                 return;
-            
+
             this.package = package;
             OnPackageChanged();
             this.package.AddSignal.WhenOperation(OnPackageAdd);
@@ -121,7 +130,7 @@ namespace UnityEditor.PackageManager.UI
             Spinner.Start();
             StateLabel.AddToClassList("no-icon");
         }
-        
+
         private void StopSpinner()
         {
             Spinner.Stop();
@@ -131,7 +140,6 @@ namespace UnityEditor.PackageManager.UI
         private Label NameLabel { get { return root.Q<Label>("packageName"); } }
         private Label StateLabel { get { return root.Q<Label>("packageState"); } }
         private Label VersionLabel { get { return root.Q<Label>("packageVersion"); } }
-        private VisualElement PackageContainer { get { return root.Q<VisualElement>("packageContainer"); } }
         private LoadingSpinner Spinner { get { return root.Q<LoadingSpinner>("packageSpinner"); } }
 
         public static string GetIconStateId(PackageInfo packageInfo)

@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI
-{    
+{
     // History of a single package
     internal class Package : IEquatable<Package>
     {
@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI
 
             if (!infos.Any())
                 throw new ArgumentException("Cannot be empty", "infos");
-            
+
             this.packageName = packageName;
             UpdateSource(infos);
         }
@@ -81,7 +81,7 @@ namespace UnityEditor.PackageManager.UI
 
                 if (candidates.Contains(verified))
                     return verified;
-                if ((current == null || !current.IsVerified ) && candidates.Contains(latestRelease))
+                if ((current == null || !current.IsVerified) && candidates.Contains(latestRelease))
                     return latestRelease;
                 if ((current == null || current.IsPreview) && candidates.Contains(latestPreview))
                     return latestPreview;
@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 if (Current == null)
                     return null;
-                
+
                 // Get all version that have the same Major/Minor
                 var versions = Versions.Where(package => package.Version.Major == Current.Version.Major && package.Version.Minor == Current.Version.Minor);
 
@@ -119,7 +119,7 @@ namespace UnityEditor.PackageManager.UI
         {
             get { return Versions.Where(package => !package.IsPreRelease); }
         }
-        
+
         internal PackageInfo LatestRelease { get {return ReleaseVersions.LastOrDefault();}}
         internal PackageInfo Verified { get {return Versions.FirstOrDefault(package => package.IsVerified);}}
 
@@ -127,18 +127,20 @@ namespace UnityEditor.PackageManager.UI
 
         internal bool IsBuiltIn {get { return Versions.Any() && Versions.First().IsBuiltIn; }}
 
+        internal bool IsUnityPackage { get { return VersionToDisplay.IsUnityPackage; } }
+
         public string Name { get { return packageName; } }
 
         public bool IsPackageManagerUI
         {
             get { return Name == packageManagerUIName; }
         }
-        
+
         public bool Equals(Package other)
         {
-            if (other == null) 
+            if (other == null)
                 return false;
-            
+
             return packageName == other.packageName;
         }
 
@@ -146,12 +148,12 @@ namespace UnityEditor.PackageManager.UI
         {
             return packageName.GetHashCode();
         }
-        
+
         [SerializeField]
         internal readonly OperationSignal<IAddOperation> AddSignal = new OperationSignal<IAddOperation>();
 
         private Action OnAddOperationFinalizedEvent;
-        
+
         internal void Add(PackageInfo packageInfo)
         {
             if (packageInfo == Current || AddRemoveOperationInProgress)

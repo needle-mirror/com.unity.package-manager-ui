@@ -33,6 +33,9 @@ $caret-text-color: #646464;
 
 $link-text-color: #0808FC;
 
+$group-text-color: #000000;
+$group-background-color: #D5D5D5;
+
 //--------------------------------------------------------------------------------------------------
 // Custom backgrounds
 //--------------------------------------------------------------------------------------------------
@@ -49,8 +52,10 @@ $background-button-slice-right: 6;
 $background-button-slice-left: 6;
 $background-button-slice-middle: 1;
 
+$background-info: resource("Images/Light/info");
+
 $background-status-outdated: resource("Images/Light/download");
-$background-status-error: resource("Images/Dark/error");
+$background-status-error: resource("Images/Light/error");
 
 $background-spinner-normal: resource("Images/Light/loading");
 $background-spinner-large: resource("Images/Light/loading");

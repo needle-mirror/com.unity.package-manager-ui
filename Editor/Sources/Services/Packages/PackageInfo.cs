@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Semver;
@@ -28,13 +28,15 @@ namespace UnityEditor.PackageManager.UI
         public List<Error> Errors;
         public bool IsVerified;
         public string Author;
+        public bool IsUnityPackage;
 
         public PackageManager.PackageInfo Info { get; set; }
-        
-        public string PackageId {
+
+        public string PackageId
+        {
             get
             {
-                if (!string.IsNullOrEmpty(_PackageId )) 
+                if (!string.IsNullOrEmpty(_PackageId))
                     return _PackageId;
                 return string.Format("{0}@{1}", Name.ToLower(), Version);
             }
@@ -48,12 +50,16 @@ namespace UnityEditor.PackageManager.UI
         public string VersionId { get { return string.Format("{0}@{1}", Name.ToLower(), Version); } }
         public string ShortVersionId { get { return string.Format("{0}@{1}", Name.ToLower(), Version.ShortVersion()); } }
 
-        public string BuiltInDescription { get {
-            if (IsBuiltIn)
-                return string.Format("This built in package controls the presence of the {0} module.", DisplayName);
-            else
-                return Description.Split(new[] {builtinPackageDocsUrlKey}, StringSplitOptions.None)[0];
-        } }
+        public string BuiltInDescription
+        {
+            get
+            {
+                if (IsBuiltIn)
+                    return string.Format("This built in package controls the presence of the {0} module.", DisplayName);
+                else
+                    return Description.Split(new[] {builtinPackageDocsUrlKey}, StringSplitOptions.None)[0];
+            }
+        }
 
         private static Version ParseShortVersion(string shortVersionId)
         {
@@ -164,11 +170,11 @@ namespace UnityEditor.PackageManager.UI
 
         public bool Equals(PackageInfo other)
         {
-            if (other == null) 
+            if (other == null)
                 return false;
             if (other == this)
                 return true;
-            
+
             return Name == other.Name && Version == other.Version;
         }
 
@@ -211,9 +217,9 @@ namespace UnityEditor.PackageManager.UI
         public bool IsInDevelopment { get { return Origin == PackageSource.Embedded; } }
         public bool IsLocal { get { return Origin == PackageSource.Local; } }
         public bool IsBuiltIn { get { return Origin == PackageSource.BuiltIn; } }
-        
+
         public string VersionWithoutTag { get { return Version.VersionOnly(); } }
-        
+
         public bool IsVersionLocked
         {
             get { return Origin == PackageSource.Embedded || Origin == PackageSource.Git || Origin == PackageSource.BuiltIn; }

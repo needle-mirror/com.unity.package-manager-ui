@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -6,8 +6,9 @@ namespace UnityEditor.PackageManager.UI
     internal enum PackageFilter
     {
         None,
-        All,
+        Unity,
         Local,
-        Modules
+        Modules,
+        Other
     }
 }

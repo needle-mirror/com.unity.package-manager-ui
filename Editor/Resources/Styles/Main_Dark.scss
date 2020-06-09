@@ -33,6 +33,9 @@ $caret-text-color: #646464;
 
 $link-text-color: #4F80F8;
 
+$group-text-color: #f4f4f4;
+$group-background-color: #292929;
+
 //--------------------------------------------------------------------------------------------------
 // Custom backgrounds
 //--------------------------------------------------------------------------------------------------
@@ -48,6 +51,8 @@ $background-right-button-selected: resource("Builtin Skins/DarkSkin/Images/btn r
 $background-button-slice-right: 0;
 $background-button-slice-left: 0;
 $background-button-slice-middle: 1;
+
+$background-info: resource("Images/Dark/info");
 
 $background-status-outdated: resource("Images/Dark/download");
 $background-status-error: resource("Images/Dark/error");

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
@@ -14,11 +14,11 @@ namespace UnityEditor.PackageManager.UI
         }
     }
 #endif
-    
+
     internal class PackageStatusBar : VisualElement
     {
 #if UNITY_2018_3_OR_NEWER
-        internal new class UxmlFactory : UxmlFactory<PackageStatusBar> { }
+        internal new class UxmlFactory : UxmlFactory<PackageStatusBar> {}
 #endif
 
         private readonly VisualElement root;
@@ -26,7 +26,9 @@ namespace UnityEditor.PackageManager.UI
 
         private List<IBaseOperation> operationsInProgress;
 
-        private enum StatusType {Normal, Loading, Error};  
+        private enum StatusType { Normal, Loading, Error };
+
+        private StatusType currentStatus;
 
         public PackageStatusBar()
         {
@@ -42,11 +44,23 @@ namespace UnityEditor.PackageManager.UI
 
             PackageCollection.Instance.ListSignal.WhenOperation(OnListOrSearchOperation);
             PackageCollection.Instance.SearchSignal.WhenOperation(OnListOrSearchOperation);
+
+            LoadingText.RegisterCallback<MouseDownEvent>(RefreshAll);
+        }
+
+        private void RefreshAll(MouseDownEvent evt)
+        {
+            if (evt.button == 0 && currentStatus != StatusType.Loading)
+            {
+                PackageCollection.Instance.FetchListOfflineCache(true);
+                PackageCollection.Instance.FetchListCache(true);
+                PackageCollection.Instance.FetchSearchCache(true);
+            }
         }
 
         private void SetDefaultMessage()
         {
-            if(!string.IsNullOrEmpty(PackageCollection.Instance.lastUpdateTime))
+            if (!string.IsNullOrEmpty(PackageCollection.Instance.lastUpdateTime))
                 SetStatusMessage(StatusType.Normal, "Last update " + PackageCollection.Instance.lastUpdateTime);
             else
                 SetStatusMessage(StatusType.Normal, string.Empty);
@@ -101,18 +115,21 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetStatusMessage(StatusType status, string message)
         {
-            if (status == StatusType.Loading)
+            currentStatus = status;
+
+            if (currentStatus == StatusType.Loading)
                 LoadingSpinner.Start();
             else
                 LoadingSpinner.Stop();
 
-            UIUtils.SetElementDisplay(LoadingIcon, status == StatusType.Error);
-            if (status == StatusType.Error)
+            UIUtils.SetElementDisplay(LoadingIcon, currentStatus == StatusType.Error);
+            if (currentStatus == StatusType.Error)
                 LoadingText.AddToClassList("icon");
             else
                 LoadingText.RemoveFromClassList("icon");
 
             LoadingText.text = message;
+            LoadingText.tooltip = currentStatus != StatusType.Loading ? "Click to refresh packages" : string.Empty;
         }
 
         private void OnMoreAddOptionsButtonClick()
@@ -145,6 +162,6 @@ namespace UnityEditor.PackageManager.UI
         private LoadingSpinner LoadingSpinner { get { return root.Q<LoadingSpinner>("packageSpinner");  }}
         private Label LoadingIcon { get { return root.Q<Label>("loadingIcon");  }}
         private Label LoadingText { get { return root.Q<Label>("loadingText");  }}
-        private Button MoreAddOptionsButton{ get { return root.Q<Button>("moreAddOptionsButton");  }}
+        private Button MoreAddOptionsButton { get { return root.Q<Button>("moreAddOptionsButton");  }}
     }
 }

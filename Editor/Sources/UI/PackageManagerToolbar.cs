@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -17,12 +17,12 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageManagerToolbar : VisualElement
     {
 #if UNITY_2018_3_OR_NEWER
-        internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> { }
+        internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
 #endif
         private readonly VisualElement root;
 
         [SerializeField]
-        private PackageFilter selectedFilter = PackageFilter.All;
+        private PackageFilter selectedFilter = PackageFilter.Unity;
 
         public PackageManagerToolbar()
         {
@@ -31,9 +31,19 @@ namespace UnityEditor.PackageManager.UI
             root.StretchToParentSize();
 
             SetFilter(PackageCollection.Instance.Filter);
-            
+            OnFilterChanged(PackageCollection.Instance.Filter);
+
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
+
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+
+            PackageCollection.Instance.OnFilterChanged += OnFilterChanged;
+        }
+
+        private void OnFilterChanged(PackageFilter filter)
+        {
+            selectedFilter = filter;
+            FilterButton.text = string.Format("{0} ▾", GetFilterDisplayName(selectedFilter));
         }
 
         public void GrabFocus()
@@ -53,12 +63,14 @@ namespace UnityEditor.PackageManager.UI
         {
             switch (filter)
             {
-                case PackageFilter.All:
-                    return "All packages";
+                case PackageFilter.Unity:
+                    return "Unity Registry";
+                case PackageFilter.Other:
+                    return "My Registries";
                 case PackageFilter.Local:
                     return "In Project";
                 case PackageFilter.Modules:
-                    return "Built-in packages";
+                    return "Built-in";
                 case PackageFilter.None:
                     return "None";
                 default:
@@ -68,12 +80,7 @@ namespace UnityEditor.PackageManager.UI
 
         private void SetFilter(object obj)
         {
-            var previouSelectedFilter = selectedFilter;
-            selectedFilter = (PackageFilter) obj;
-            FilterButton.text = string.Format("{0} ▾", GetFilterDisplayName(selectedFilter));
-
-            if (selectedFilter != previouSelectedFilter)
-                PackageCollection.Instance.SetFilter(selectedFilter);
+            PackageCollection.Instance.SetFilter((PackageFilter)obj);
         }
 
         private void OnFilterButtonMouseDown(MouseDownEvent evt)
@@ -82,15 +89,20 @@ namespace UnityEditor.PackageManager.UI
                 return;
 
             var menu = new GenericMenu();
-            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.All)), 
-                selectedFilter == PackageFilter.All, 
-                SetFilter, PackageFilter.All);
-            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Local)), 
-                selectedFilter == PackageFilter.Local, 
-                SetFilter, PackageFilter.Local);
+            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Unity)),
+                selectedFilter == PackageFilter.Unity,
+                SetFilter, PackageFilter.Unity);
+
+            if (PackageCollection.Instance.LatestSearchOtherPackages.Any(p => !p.IsLocal && !p.IsInDevelopment))
+                menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Other)),
+                    selectedFilter == PackageFilter.Other,
+                    SetFilter, PackageFilter.Other);
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Modules)), 
-                selectedFilter == PackageFilter.Modules, 
+            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Local)),
+                selectedFilter == PackageFilter.Local,
+                SetFilter, PackageFilter.Local);
+            menu.AddItem(new GUIContent(GetFilterDisplayName(PackageFilter.Modules)),
+                selectedFilter == PackageFilter.Modules,
                 SetFilter, PackageFilter.Modules);
             var menuPosition = new Vector2(FilterButton.layout.xMin, FilterButton.layout.center.y);
             menuPosition = this.LocalToWorld(menuPosition);

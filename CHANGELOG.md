@@ -4,6 +4,18 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.12] - 2020-06-09
+- Restore the AssemblyInfo file
+
+## [2.0.11] - 2020-06-03
+- Expand a group if a package in the group is selected when switching tabs
+
+## [2.0.10] - 2020-04-09
+- Rename the new tabs to `Unity Registry` and `My Registries`.
+
+## [2.0.9] - 2020-04-09
+- Split Unity packages and other packages in two different tabs.
+
 ## [2.0.8] - 2019-09-17
 - Open offline documentations when online documentations are not accessible.
 

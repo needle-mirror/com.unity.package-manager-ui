@@ -35,12 +35,12 @@ namespace UnityEditor.PackageManager.UI.Tests
         {
             onPackageChangedEvent = packages =>
             {
-                var package = Container.Query(null, "package").First();
+                var package = Container.Query<PackageItem>().First();
 
                 Assert.NotNull(package);
                 Assert.IsTrue(package.ClassListContains(PackageItem.SelectedClassName));
             };
-            
+
             PackageCollection.Instance.OnPackagesChanged += onPackageChangedEvent;
             SetListPackages(PackageSets.Instance.Many(5, true));
         }
@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                 Assert.IsTrue(latest.Version == version.text);
                 Assert.IsFalse(hasOutdatedClass);
             };
-            
+
             package.AddSignal.OnOperation += operation =>
             {
                 operation.OnOperationSuccess += packageInfo =>
@@ -105,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Tests
                 operation.OnOperationFinalized += () =>
                 {
                     Assert.IsTrue(package.Current.PackageId ==
-                                  current.PackageId); // Make sure package hasn't been upgraded
+                        current.PackageId);           // Make sure package hasn't been upgraded
 
                     var packageItem = Container.Query(null, "package").Build().First();
                     var label = packageItem.Q<Label>("packageName");
@@ -167,8 +167,8 @@ namespace UnityEditor.PackageManager.UI.Tests
 
             package.Remove();
         }
-        
-        [Test] 
+
+        [Test]
         public void When_Filter_Changes_Shows_Correct_List()
         {
             var packagesLocal = PackageSets.Instance.Many(2);
@@ -186,8 +186,8 @@ namespace UnityEditor.PackageManager.UI.Tests
             };
 
             PackageCollection.Instance.OnPackagesChanged += onPackageChangedEvent;
-            
-            PackageCollection.Instance.SetFilter(PackageFilter.All);
+
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity);
         }
 
         [Test]
@@ -195,17 +195,26 @@ namespace UnityEditor.PackageManager.UI.Tests
         {
             PackageCollection.Instance.SetFilter(PackageFilter.Local);                            // Set filter to use list
             SetListPackages(PackageSets.Instance.Many(2));
-            
+
             Assert.IsTrue(PackageCollection.Instance.LatestListPackages.Any());            // Make sure packages are cached
         }
 
         [Test]
-        public void SearchPackages_UsesCache()
+        public void SearchUnityPackages_UsesCache()
         {
-            PackageCollection.Instance.SetFilter(PackageFilter.All);                                // Set filter to use search
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity);                                // Set filter to use search
             SetSearchPackages(PackageSets.Instance.Many(2));
-            
-            Assert.IsTrue(PackageCollection.Instance.LatestSearchPackages.Any());     // Make sure packages are cached
+
+            Assert.IsTrue(PackageCollection.Instance.LatestSearchUnityPackages.Any());     // Make sure packages are cached
+        }
+
+        [Test]
+        public void SearchOtherPackages_UsesCache()
+        {
+            PackageCollection.Instance.SetFilter(PackageFilter.Other);                                // Set filter to use search
+            SetSearchPackages(PackageSets.Instance.Many(2, false, false));
+
+            Assert.IsTrue(PackageCollection.Instance.LatestSearchOtherPackages.Any());     // Make sure packages are cached
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             };
 
             PackageCollection.Instance.OnFilterChanged += OnFilterChangeEvent;
-            PackageCollection.Instance.SetFilter(PackageFilter.All, false);
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity, false);
             Assert.IsTrue(wasCalled);
         }
 
@@ -59,8 +59,8 @@ namespace UnityEditor.PackageManager.UI.Tests
         [Test]
         public void SetFilter_WhenFilterChange_FilterIsChanged()
         {
-            PackageCollection.Instance.SetFilter(PackageFilter.All, false);
-            Assert.AreEqual(PackageFilter.All, PackageCollection.Instance.Filter);
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity, false);
+            Assert.AreEqual(PackageFilter.Unity, PackageCollection.Instance.Filter);
         }
 
         [Test]
@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Tests
             };
 
             PackageCollection.Instance.OnPackagesChanged += OnPackagesChangeEvent;
-            PackageCollection.Instance.SetFilter(PackageFilter.All, false);
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity, false);
             Assert.IsFalse(wasCalled);
         }
 
@@ -120,7 +120,6 @@ namespace UnityEditor.PackageManager.UI.Tests
 
             Assert.IsTrue(wasCalled);
         }
-
 
         [Test]
         public void FetchListOfflineCache_PackagesChangeEventIsPropagated()

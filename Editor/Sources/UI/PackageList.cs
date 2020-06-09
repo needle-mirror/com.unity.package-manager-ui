@@ -19,12 +19,12 @@ namespace UnityEditor.PackageManager.UI
     internal class PackageList : VisualElement
     {
 #if UNITY_2018_3_OR_NEWER
-        internal new class UxmlFactory : UxmlFactory<PackageList> { }
+        internal new class UxmlFactory : UxmlFactory<PackageList> {}
 #endif
 
-        public event Action<Package> OnSelected = delegate { };
-        public event Action OnLoaded = delegate { };
-        public event Action OnFocusChange = delegate { };
+        public event Action<Package> OnSelected = delegate {};
+        public event Action OnLoaded = delegate {};
+        public event Action OnFocusChange = delegate {};
 
         private readonly VisualElement root;
         internal PackageItem selectedItem;
@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI
         {
             if (selectedItem == null)
                 return;
-            
+
             selectedItem.Focus();
         }
 
@@ -71,7 +71,11 @@ namespace UnityEditor.PackageManager.UI
 
         public void ShowNoResults()
         {
-            NoResultText.text = string.Format("No results for \"{0}\"", PackageSearchFilter.Instance.SearchText);
+            if (string.IsNullOrEmpty(PackageSearchFilter.Instance.SearchText))
+                NoResultText.text = "No packages found";
+            else
+                NoResultText.text = string.Format("No results for \"{0}\"", PackageSearchFilter.Instance.SearchText);
+
             UIUtils.SetElementDisplay(NoResult, true);
             foreach (var group in Groups)
             {
@@ -85,29 +89,7 @@ namespace UnityEditor.PackageManager.UI
         {
             foreach (var group in Groups)
             {
-                PackageItem firstPackage = null;
-                PackageItem lastPackage = null;
-
-                var listGroup = group.Query<PackageItem>().ToList();
-                foreach (var item in listGroup)
-                {
-                    if (!item.visible)
-                        continue;
-
-                    if (firstPackage == null) firstPackage = item;
-                    lastPackage = item;
-                }
-
-                if (firstPackage == null && lastPackage == null)
-                {
-                    UIUtils.SetElementDisplay(group, false);
-                }
-                else 
-                {
-                    UIUtils.SetElementDisplay(group, true);
-                    group.firstPackage = firstPackage;
-                    group.lastPackage = lastPackage;
-                }
+                UIUtils.SetElementDisplay(group, group.packageItems.Any(item => !UIUtils.IsElementDisplayNone(item)));
             }
         }
 
@@ -124,7 +106,7 @@ namespace UnityEditor.PackageManager.UI
         private void ScrollIfNeeded()
         {
             EditorApplication.delayCall -= ScrollIfNeeded;
-            
+
             if (selectedItem == null)
                 return;
 
@@ -148,6 +130,79 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
+        private static VisualElement FindNextSiblingByCondition(VisualElement element, Func<VisualElement, bool> matchFunc, bool reverseOrder)
+        {
+            if (element == null)
+                return null;
+
+            var parent = element.parent;
+            var index = parent.IndexOf(element);
+            if (reverseOrder)
+            {
+                for (var i = index - 1; i >= 0; i--)
+                {
+                    var nextElement = parent.ElementAt(i);
+                    if (matchFunc(nextElement))
+                        return nextElement;
+                }
+            }
+            else
+            {
+                for (var i = index + 1; i < parent.childCount; i++)
+                {
+                    var nextElement = parent.ElementAt(i);
+                    if (matchFunc(nextElement))
+                        return nextElement;
+                }
+            }
+            return null;
+        }
+
+        private static PackageItem FindNextVisiblePackageItem(PackageItem item, bool reverseOrder)
+        {
+            PackageItem nextVisibleItem = null;
+            if (item.packageGroup.IsExpanded)
+                nextVisibleItem = FindNextSiblingByCondition(item, UIUtils.IsElementVisible, reverseOrder) as PackageItem;
+
+            if (nextVisibleItem == null)
+            {
+                Func<VisualElement, bool> expandedNonEmptyGroup = (element) =>
+                {
+                    var group = element as PackageGroup;
+                    return group.IsExpanded && group.packageItems.Any(p => !UIUtils.IsElementDisplayNone(p));
+                };
+                var nextGroup = FindNextSiblingByCondition(item.packageGroup, expandedNonEmptyGroup, reverseOrder) as PackageGroup;
+                if (nextGroup != null)
+                    nextVisibleItem = reverseOrder ? nextGroup.packageItems.LastOrDefault(p => !UIUtils.IsElementDisplayNone(p)) : nextGroup.packageItems.FirstOrDefault(p => !UIUtils.IsElementDisplayNone(p));
+            }
+            return nextVisibleItem;
+        }
+
+        private static PackageItem FindPackageItemPageUpOrPageDown(PackageItem item, bool isPageUp)
+        {
+            PackageItem targetItem = null;
+            if (item.packageGroup.IsExpanded)
+                targetItem = (isPageUp ? item.parent.Children().FirstOrDefault(p => !UIUtils.IsElementDisplayNone(p)) 
+                    : item.parent.Children().LastOrDefault(p => !UIUtils.IsElementDisplayNone(p))) as PackageItem;
+
+            if (targetItem == item)
+                targetItem = null;
+
+            if (targetItem == null)
+            {
+                Func<VisualElement, bool> expandedNonEmptyGroup = (element) =>
+                {
+                    var group = element as PackageGroup;
+                    return group.IsExpanded && group.packageItems.Any(p => !UIUtils.IsElementDisplayNone(p));
+                };
+                var nextGroup = FindNextSiblingByCondition(item.packageGroup, expandedNonEmptyGroup, isPageUp) as PackageGroup;
+                if (nextGroup != null)
+                    targetItem = (isPageUp ? nextGroup.packageItems.LastOrDefault(p => p != item && !UIUtils.IsElementDisplayNone(p))
+                    : nextGroup.packageItems.FirstOrDefault(p => p != item && !UIUtils.IsElementDisplayNone(p))) as PackageItem;
+            }
+            return targetItem;
+        }
+
         private void OnKeyDownShortcut(KeyDownEvent evt)
         {
             if (selectedItem == null)
@@ -159,17 +214,13 @@ namespace UnityEditor.PackageManager.UI
                 evt.StopPropagation();
                 return;
             }
-            
+
             if (evt.keyCode == KeyCode.UpArrow)
             {
-                if (selectedItem.previousItem != null)
+                var nextVisibleItem = FindNextVisiblePackageItem(selectedItem, true);
+                if (nextVisibleItem != null)
                 {
-                    Select(selectedItem.previousItem);
-                    ScrollIfNeeded();
-                }
-                else if (selectedItem.packageGroup.previousGroup != null && selectedItem.packageGroup.previousGroup.visible)
-                {
-                    Select(selectedItem.packageGroup.previousGroup.lastPackage);
+                    Select(nextVisibleItem);
                     ScrollIfNeeded();
                 }
                 evt.StopPropagation();
@@ -178,14 +229,10 @@ namespace UnityEditor.PackageManager.UI
 
             if (evt.keyCode == KeyCode.DownArrow)
             {
-                if (selectedItem.nextItem != null)
+                var nextVisibleItem = FindNextVisiblePackageItem(selectedItem, false);
+                if (nextVisibleItem != null)
                 {
-                    Select(selectedItem.nextItem);
-                    ScrollIfNeeded();
-                }
-                else if (selectedItem.packageGroup.nextGroup != null && selectedItem.packageGroup.nextGroup.visible)
-                {
-                    Select(selectedItem.packageGroup.nextGroup.firstPackage);
+                    Select(nextVisibleItem);
                     ScrollIfNeeded();
                 }
                 evt.StopPropagation();
@@ -194,23 +241,11 @@ namespace UnityEditor.PackageManager.UI
 
             if (evt.keyCode == KeyCode.PageUp)
             {
-                if (selectedItem.packageGroup != null)
+                var targetItem = FindPackageItemPageUpOrPageDown(selectedItem, true);
+                if (targetItem != null)
                 {
-                    if (selectedItem == selectedItem.packageGroup.lastPackage && selectedItem != selectedItem.packageGroup.firstPackage)
-                    {
-                        Select(selectedItem.packageGroup.firstPackage);
-                        ScrollIfNeeded();
-                    }
-                    else if (selectedItem == selectedItem.packageGroup.firstPackage && selectedItem.packageGroup.previousGroup != null && selectedItem.packageGroup.previousGroup.visible)
-                    {
-                        Select(selectedItem.packageGroup.previousGroup.lastPackage);
-                        ScrollIfNeeded();
-                    }
-                    else if (selectedItem != selectedItem.packageGroup.lastPackage && selectedItem != selectedItem.packageGroup.firstPackage)
-                    {
-                        Select(selectedItem.packageGroup.firstPackage);
-                        ScrollIfNeeded();
-                    }
+                    Select(targetItem);
+                    ScrollIfNeeded();
                 }
                 evt.StopPropagation();
                 return;
@@ -218,25 +253,14 @@ namespace UnityEditor.PackageManager.UI
 
             if (evt.keyCode == KeyCode.PageDown)
             {
-                if (selectedItem.packageGroup != null)
+                var targetItem = FindPackageItemPageUpOrPageDown(selectedItem, false);
+                if (targetItem != null)
                 {
-                    if (selectedItem == selectedItem.packageGroup.firstPackage && selectedItem != selectedItem.packageGroup.lastPackage)
-                    {
-                        Select(selectedItem.packageGroup.lastPackage);
-                        ScrollIfNeeded();
-                    }
-                    else if (selectedItem == selectedItem.packageGroup.lastPackage && selectedItem.packageGroup.nextGroup != null && selectedItem.packageGroup.nextGroup.visible)
-                    {
-                        Select(selectedItem.packageGroup.nextGroup.firstPackage);
-                        ScrollIfNeeded();
-                    }
-                    else if (selectedItem != selectedItem.packageGroup.firstPackage && selectedItem != selectedItem.packageGroup.lastPackage)
-                    {
-                        Select(selectedItem.packageGroup.lastPackage);
-                        ScrollIfNeeded();
-                    }
+                    Select(targetItem);
+                    ScrollIfNeeded();
                 }
                 evt.StopPropagation();
+                return;
             }
         }
 
@@ -262,46 +286,28 @@ namespace UnityEditor.PackageManager.UI
             {
                 packages = packages.Where(pkg => pkg.IsBuiltIn);
             }
-            else if (PackageCollection.Instance.Filter== PackageFilter.All)
+            else if (PackageCollection.Instance.Filter == PackageFilter.Unity)
             {
-                packages = packages.Where(pkg => !pkg.IsBuiltIn);
+                packages = packages.Where(pkg => !pkg.IsBuiltIn && pkg.IsUnityPackage && !((pkg.Current?.IsLocal ?? false) || (pkg.Current?.IsInDevelopment ?? false)));
             }
-            else
+            else if (PackageCollection.Instance.Filter == PackageFilter.Other)
             {
-                packages = packages.Where(pkg => !pkg.IsBuiltIn);
-                packages = packages.Where(pkg => pkg.Current != null);
+                packages = packages.Where(pkg => !pkg.IsBuiltIn && !pkg.IsUnityPackage && !((pkg.Current?.IsLocal ?? false) || (pkg.Current?.IsInDevelopment ?? false)));
+            }
+            else // PackageCollection.Instance.Filter == PackageFilter.Local
+            {
+                packages = packages.Where(pkg => !pkg.IsBuiltIn && pkg.Current != null);
             }
 
             OnLoaded();
             ClearAll();
-
-            var packagesGroup = new PackageGroup(PackageGroupOrigins.Packages.ToString());
-            Groups.Add(packagesGroup);
-            List.Add(packagesGroup);
-            packagesGroup.previousGroup = null;
-
-            var builtInGroup = new PackageGroup(PackageGroupOrigins.BuiltInPackages.ToString());
-            Groups.Add(builtInGroup);
-            List.Add(builtInGroup);
-
-            if ((PackageCollection.Instance.Filter & PackageFilter.Modules) == PackageFilter.Modules)
-            {
-                packagesGroup.nextGroup = builtInGroup;
-                builtInGroup.previousGroup = packagesGroup;
-                builtInGroup.nextGroup = null;
-            }
-            else
-            {
-                packagesGroup.nextGroup = null;
-                UIUtils.SetElementDisplay(builtInGroup, false);
-            }
 
             var lastSelection = PackageCollection.Instance.SelectedPackage;
             Select(null);
 
             PackageItem defaultSelection = null;
 
-            foreach (var package in packages.OrderBy(pkg => pkg.Versions.FirstOrDefault() == null ? pkg.Name : pkg.Versions.FirstOrDefault().DisplayName))
+            foreach (var package in packages)
             {
                 var item = AddPackage(package);
 
@@ -323,7 +329,7 @@ namespace UnityEditor.PackageManager.UI
             var lastSelection = PackageCollection.Instance.SelectedPackage;
             if (lastSelection == null)
                 return;
-            
+
             var list = List.Query<PackageItem>().ToList();
             PackageItem defaultSelection = null;
 
@@ -345,8 +351,8 @@ namespace UnityEditor.PackageManager.UI
 
         private PackageItem AddPackage(Package package)
         {
-            var groupName = package.Latest != null ? package.Latest.Group : package.Current.Group;
-            var group = GetOrCreateGroup(groupName);
+            var groupName = PackageCollection.GetGroupName(package);
+            var group = GetOrCreateGroup(groupName, package.IsBuiltIn || (PackageCollection.Instance.Filter == PackageFilter.Unity && package.IsUnityPackage));
             var packageItem = group.AddPackage(package);
 
             packageItem.OnSelected += Select;
@@ -354,7 +360,7 @@ namespace UnityEditor.PackageManager.UI
             return packageItem;
         }
 
-        private PackageGroup GetOrCreateGroup(string groupName)
+        private PackageGroup GetOrCreateGroup(string groupName, bool hidden)
         {
             foreach (var g in Groups)
             {
@@ -362,25 +368,41 @@ namespace UnityEditor.PackageManager.UI
                     return g;
             }
 
-            var group = new PackageGroup(groupName);
-            var latestGroup = Groups.LastOrDefault();
+            var group = new PackageGroup(groupName, hidden);
+            if (!hidden)
+            {
+                group.OnGroupToggle += value =>
+                {
+                    if (value)
+                    {
+                        PackageCollection.Instance.CollapsedGroups.Remove(group.name);
+
+                        if (group.Contains(selectedItem))
+                            EditorApplication.delayCall += ScrollIfNeeded;
+                    }
+                    else
+                    {
+                        if (!PackageCollection.Instance.CollapsedGroups.Contains(group.name))
+                            PackageCollection.Instance.CollapsedGroups.Add(group.name);
+                    }
+                };
+            }
+
+            group.SetExpanded(!PackageCollection.Instance.CollapsedGroups.Contains(groupName));
+
             Groups.Add(group);
             List.Add(group);
-
-            group.previousGroup = null;
-            if (latestGroup != null)
-            {
-                latestGroup.nextGroup = group;
-                group.previousGroup = latestGroup;
-                group.nextGroup = null;
-            }
             return group;
         }
 
         private void Select(PackageItem packageItem)
         {
             if (packageItem == selectedItem)
+            {
+                if (selectedItem != null)
+                    selectedItem.SetSelected(true);
                 return;
+            }
 
             var selectedPackageName = packageItem != null ? packageItem.package.Name : null;
             PackageCollection.Instance.SelectedPackage = selectedPackageName;

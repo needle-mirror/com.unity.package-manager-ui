@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager.UI
                 PackageList.OnSelected += OnPackageSelected;
                 PackageList.OnLoaded += OnPackagesLoaded;
                 PackageList.OnFocusChange += OnListFocusChange;
-                
+
                 PackageManagerToolbar.SearchToolbar.OnSearchChange += OnSearchChange;
                 PackageManagerToolbar.SearchToolbar.OnFocusChange += OnToolbarFocusChange;
 
@@ -80,11 +80,12 @@ namespace UnityEditor.PackageManager.UI
                 PackageManagerToolbar.SearchToolbar.OnFocusChange -= OnToolbarFocusChange;
             }
         }
-        
+
         public void OnDestroy()
         {
             PackageSearchFilter.Instance.ResetSearch();
-            PackageCollection.Instance.SetFilter(PackageFilter.All, false);
+            PackageCollection.Instance.ResetExpandedGroups();
+            PackageCollection.Instance.SetFilter(PackageFilter.Unity, false);
         }
 
         private void OnPackageSelected(Package package)
@@ -113,7 +114,7 @@ namespace UnityEditor.PackageManager.UI
         }
 
         internal Alert ErrorBanner { get { return this.GetRootVisualContainer().Q<Alert>("errorBanner"); } }
-        
+
 #endif
 
         [MenuItem("Window/Package Manager", priority = 1500)]

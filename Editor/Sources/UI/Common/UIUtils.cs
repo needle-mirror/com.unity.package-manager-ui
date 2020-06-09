@@ -1,4 +1,5 @@
-﻿using UnityEngine.Experimental.UIElements;
+﻿using System;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -50,6 +51,28 @@ namespace UnityEditor.PackageManager.UI
         public static bool IsElementVisible(VisualElement element)
         {
             return element.visible && !element.ClassListContains(DisplayNone);
+        }
+
+        public static bool IsElementDisplayNone(VisualElement element)
+        {
+            return element.ClassListContains(DisplayNone);
+        }
+
+        public static void ShowTextTooltipOnSizeChange<T>(this T element, int deltaWidth = 0) where T : TextElement
+        {
+            element.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                if (evt.newRect.width == evt.oldRect.width)
+                    return;
+
+                var target = evt.target as TextElement;
+                if (target == null)
+                    return;
+
+                var size = target.MeasureTextSize(target.text, float.MaxValue, VisualElement.MeasureMode.AtMost, evt.newRect.height, VisualElement.MeasureMode.Undefined);
+                var width = evt.newRect.width + deltaWidth;
+                target.tooltip = width < size.x ? target.text : string.Empty;
+            });
         }
     }
 }
