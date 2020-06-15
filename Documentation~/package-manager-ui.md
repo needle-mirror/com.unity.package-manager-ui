@@ -23,13 +23,13 @@ The Packages window displays the following types of Unity packages:
 
 - **Read-only packages**
 
-  These are packages which the Package Manager downloads from the [Unity package registry](#PackManRegistry) as needed. They are not bundled with the project source and may have dependencies on other packages in external projects. This type is typical of most Unity packages.
+  These are packages which the Package Manager downloads from the [Unity package registry](#PackManRegistry) as needed. They are not bundled with the project source, and might have dependencies on other packages in external projects. This type is typical of most Unity packages.
 
   The Package Manager can also download packages from other registries. For more information, see [scoped package registries](#ScopedRegistries).
 
 - **Local packages**
 
-  These are packages that you saved on your computer in an [external](#extpkg) location outside of your current Unity project.
+  These are packages that you have saved on your computer in an [external](#extpkg) location, outside of your current Unity project.
 
 - **Built-in packages**
 
@@ -41,11 +41,11 @@ By default, the Packages window displays the list of all packages either registe
 
 The following icons show you package status:
 
-![check mark](Images/PackageManagerUI-checkmark.png) A check mark indicates that the package is already [installed](#PackManInstall) or [enabled](#PackManDisable).
-
-![download icon](Images/PackageManagerUI-downloadicon.png) The download icon indicates that the installed packages has [an available update](#PackManUpdate).
-
-![error indicator](Images/PackageManagerUI-errorflag.png) An error icon indicates that something went wrong during installation or loading. For more advice on resolving errors, see [Error messages](#troubleshooting) below.
+| **Icon:**                                     | **Description:**                                             |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| ![](Images/PackageManagerUI-checkmark.png)    | A check mark indicates that the package is already [installed](#PackManInstall) or [enabled](#PackManDisable). |
+| ![](Images/PackageManagerUI-downloadicon.png) | The download icon indicates that the installed packages has [an available update](#PackManUpdate). |
+| ![](Images/PackageManagerUI-errorflag.png)    | An error icon indicates that something went wrong during installation or loading. For more advice on resolving errors, see [Error messages](#troubleshooting) below. |
 
 You can [filter](#scope) the list to display only packages installed in your project (including [local](#extpkg) packages), or display only built-in Unity packages. You can also [search](#searchText) for a specific package by package name, tag, or package version number.
 
@@ -53,7 +53,7 @@ You can [filter](#scope) the list to display only packages installed in your pro
 
 ### Filtering the list
 
-To change which packages appear in the list, select the scope you want from the drop-down menu in the left hand corner of the Packages window.
+To change which packages appear in the list, select the scope you want from the drop-down menu in the left-hand corner of the Packages window.
 
 ![](Images/PackageManagerUI-Filtering.png) 
 
@@ -73,7 +73,7 @@ When you select a new scope, your choice appears on the package scope drop-down 
 <a name="advanced"></a>
 ### Advanced button
 
-The **Advanced** button opens a drop-down menu that allows you to show preview packages. Preview package are not verified to work with Unity and might be unstable. They are not not supported in production environments.
+The **Advanced** button opens a drop-down menu that allows you to show preview packages. Preview packages are not verified to work with Unity and might be unstable. They are not supported in production environments.
 
 To show the preview packages that are available, click the **Advanced** button, then click the **Show preview packages** menu item.
 
@@ -84,13 +84,13 @@ You can use the search box at the top of the Packages window to find any package
 
 ![Built-in package scope](Images/PackageManagerUI-SearchResults.png) 
 
-You can look for a package by its [package name](#PackManManifestsPackage), its [tag name](#version_tags), or its [package version number](#VersionList).  The Package Manager analyzes the text that you enter to detect which method you are using and updates the list of packages dynamically.
+You can search for a package by its [package name](#PackManManifestsPackage), its [tag name](#version_tags), or its [package version number](#VersionList).  The Package Manager analyzes the text that you enter to detect which method you are using, and updates the list of packages dynamically.
 
 **Package name**
 
 You can search for either the display name as it appears in the Packages window, or the registered package name that begins with `com.unity`.
 
-Your search text could match the beginning, middle, or end of the package's name.
+Your search text can match the beginning, middle, or end of the package's name.
 
 **Tag name**
 
@@ -148,18 +148,18 @@ Some packages display tags next to the version number. These tags convey informa
 
 The Package Manager uses the following values:
 
-| **Tag** | **Meaning** |
+| **Tag:** | **Meaning:** |
 |--|--|
-| <span style="font-weight:bold; color:gray; font-size:75%; border-radius:25px; border:2px solid gray; padding:2px;"> verified </span> | Verified packages are packages that have undergone testing and have been verified to work safely with a specific version of Unity, and all other packages verified for that version. Packages that have been verified to work with this version of Unity display the <span style="font-weight:bold; color:gray; font-size:75%; border-radius:25px; border:2px solid gray; padding:2px;"> 2018.4 verified </span> indicator beside it in the Package Manager window. |
+| <span style="font-weight:bold; color:gray; font-size:75%; border-radius:25px; border:2px solid gray; padding:2px;"> verified </span> | Verified packages are packages that have undergone testing and have been verified to work safely with a specific version of Unity, and all other packages verified for that version. Packages that have been verified to work with this version of Unity display the <span style="font-weight:bold; color:gray; font-size:75%; border-radius:25px; border:2px solid gray; padding:2px;"> 2018.4 verified </span> indicator beside them in the Package Manager window. |
 | <span style="font-weight:bold; color:orange; font-size:75%; border-radius:25px; border:2px solid orange; padding:2px;"> preview </span> | Preview packages are packages that are **not** production-ready and you should only use them for testing and to provide feedback. At some point in the future, they might pass the verification requirements; however, they might also be deprecated instead. Because there is no guarantee for future support, you should not use any package that appears with the <span style="font-weight:bold; color:orange; font-size:75%; border-radius:25px; border:2px solid orange; padding:2px;"> preview </span> indicator. |
-| <span style="font-weight:bold; color:orange; font-size:75%; border-radius:25px; border:2px solid orange; padding:2px;"> local </span> | This package is located on your local disk but is external to your Unity `Project` folder. |
+| <span style="font-weight:bold; color:orange; font-size:75%; border-radius:25px; border:2px solid orange; padding:2px;"> local </span> | This package is located on your local disk, but is external to your Unity project folder. |
 | *(no tag)* | Any package that appears in this list without either the <span style="font-weight:bold; color:gray; font-size:75%; border-radius:25px; border:2px solid gray; padding:2px;"> 2018.4 verified </span> indicator or the <span style="font-weight:bold; color:orange; font-size:75%; border-radius:25px; border:2px solid orange; padding:2px;"> preview </span> indicator is safe to use in this version of Unity and has been validated, but is not officially verified for this version. |
 
 <a name="links"></a>
 
 ### Finding more information
 
-You can find out more about a package by viewing its documentation, changelog, or license information.
+To find out more about a package, you can view its documentation, changelog, or license information.
 
 To access any of these pages, click the **View documentation**, **View changelog**, or **View licences** links.
 
@@ -167,7 +167,7 @@ The package page opens in your default browser.
 
 ![Package information page](Images/PackageManagerUI-DocSite.png)
 
-To switch back and forth between the *Manual* documentation, the *Scripting API* documentation, the *Changelog*, and the *License* information for this package, click the corresponding link at the top of the page.
+To switch back and forth between the User Manual documentation, the Scripting API documentation, the Changelog, and the License information for this package, click the corresponding link at the top of the page.
 
 <a name="PackManOpen"></a>
 ## Installing, removing, disabling, and updating packages
@@ -188,7 +188,7 @@ To open the Packages window, navigate to Unity's main menu and go to **Window** 
 
 To install a new package:
 
-1.  Open the Packages window and select either **Unity Registry** or **My Registries** from the [package scope](#scope) drop-down menu.
+1.  Open the Packages window and, from the [package scope](#scope) drop-down menu, select either **Unity Registry** or **My Registries**.
 2.  Select the package you want to install from the [list of packages](#PackManLists). The package information appears in the [details pane](#PackManDetails).
 3. Select the version you want from the [version drop-down menu](#VersionList).
 4. Click the **Install** button. When the progress bar finishes, the new package is ready to use.
@@ -227,7 +227,7 @@ To re-enable a disabled built-in package, click the **Enable** button.
 <a name="PackManUpdate"></a>
 ### Updating an installed package
 
-You can update a package while in either the **In Project** scope or either the **Unity Registry** or **My Registries** scopes:
+You can update a package while in the **In Project** scope, the **Unity Registry** scope, or the **My Registries** scope:
 
 1. Open the Packages window. An arrow indicator appears next to any packages that have updates available.
 2. Select the package you want to update from the [list of packages](#PackManLists). The package information appears in the [details pane](#PackManDetails).
@@ -239,7 +239,7 @@ When the progress bar finishes, the new package version information appears in t
 <a name="extpkg"></a>
 ### Specifying a local package location
 
-The Package Manager can load a package from anywhere on your computer even if you saved it outside your Unity `Project` folder. For example, if you have a package called `com.unity.my-local-package` and you save it on the `Desktop` but your Unity project is under the `Documents` folder.
+The Package Manager can load a package from anywhere on your computer, even if you saved it outside your Unity project folder.
 
 To load a package from your local disk:
 
@@ -270,7 +270,7 @@ The Package Manager displays error indicators when it encounters problems:
 
 - **Package-specific issues**
 
-  If a specific package has a problem when loading or installing, the error icon (![error indicator](Images/PackageManagerUI-errorflag.png)) appears in the [package list](#PackManLists) next to the compromised package. To find out what the problem is, open the compromised package's [details pane](#PackManDetails).
+  If a specific package has a problem when loading or installing, the error icon (![](Images/PackageManagerUI-errorflag.png)) appears in the [package list](#PackManLists) next to the compromised package. To find out what the problem is, open the compromised package's [details pane](#PackManDetails).
 
 ## Understanding how packages work
 
@@ -290,7 +290,7 @@ Project manifests (`manifest.json`) tell the Package Manager which packages and 
 
 Project manifests support the following value:
 
-| Key | JSON Type | Description |
+| **Key:** | **JSON Type:** | **Description:** |
 |--|--|--|
 | **dependencies** | Object |List of packages for the Package Manager to load. These are usually packages officially registered with Unity, but may also include [local packages that are external](#extpkg) to your Unity project. |
 | <a name="registry"></a>**registry**           | String           | URL of the main Unity Package Manager registry. This overrides the default registry URL (`https://packages.unity.com`).  <br /><br />**Note**: If you override the default registry with your own registry, you lose access to the official Unity packages. Instead, if you want to augment the Unity package library with your own private collection of packages, set the __scopedRegistries__ attribute to use a scoped registry. |
@@ -299,14 +299,16 @@ Project manifests support the following value:
 
 Example of a `manifest.json` file:
 
-	{
-		"dependencies": {
-			"com.unity.package-1": "1.0.0",
-			"com.unity.package-2": "2.0.0",
-			"com.unity.package-3": "3.0.0",
-			"com.unity.my-local-package": "file:/<external_path>/com.unity.my-local-package"
-		}
+```lang-json
+{
+	"dependencies": {
+		"com.unity.package-1": "1.0.0",
+		"com.unity.package-2": "2.0.0",
+		"com.unity.package-3": "3.0.0",
+		"com.unity.my-local-package": "file:/<external_path>/com.unity.my-local-package"
 	}
+}
+```
 
 Unity stores each project manifest in the `[your_project_root_folder]/Packages/manifest.json` file.
 
@@ -317,7 +319,7 @@ The Package Manager uses package manifests (`package.json`) to determine which v
 
 Package manifests support the following values:
 
-| Key | JSON Type | Description |
+| **Key:** | **JSON Type:** | **Description:** |
 |--|--|--|
 | **name** | String |The officially registered package name, following this naming convention: `"com.unity.[package name]"`. For example, `"com.unity.resourcemanager"` |
 | **displayName** | String |The package name as it appears in the Packages window. For example, `"Resource Manager"` |
@@ -329,20 +331,22 @@ Package manifests support the following values:
 
 Example of a `package.json` file:
 
-	{
-		"name": "com.unity.package-4",
-		"displayName": "Package Number 4",
-		"version": "2.5.1",
-		"unity": "2018.2",
-		"description": "This package provides X, Y, and Z. \n\nTo find out more, click the \"View documentation\" link.",
-		"keywords": ["key X", "key Y", "key Z"],
-		"category": "Controllers",
-		"dependencies": {
-			"com.unity.package-1": "1.0.0",
-			"com.unity.package-2": "2.0.0",
-			"com.unity.package-3": "3.0.0"
-		}
+```lang-json
+{
+	"name": "com.unity.package-4",
+	"displayName": "Package Number 4",
+	"version": "2.5.1",
+	"unity": "2018.2",
+	"description": "This package provides X, Y, and Z. \n\nTo find out more, click the \"View documentation\" link.",
+	"keywords": ["key X", "key Y", "key Z"],
+	"category": "Controllers",
+	"dependencies": {
+		"com.unity.package-1": "1.0.0",
+		"com.unity.package-2": "2.0.0",
+		"com.unity.package-3": "3.0.0"
 	}
+}
+```
 
 Unity stores each package manifest in the `[package_root_folder]/package.json` file.
 
@@ -351,7 +355,7 @@ Unity stores each package manifest in the `[package_root_folder]/package.json` f
 
 Unity maintains a central registry of official packages that are available for distribution. When Unity loads, the Package Manager communicates with the registry, checks the project manifest file, and displays the status of each available package in the Packages window.
 
-When you remove a package from the project, the Package Manager updates the project manifest to exclude that package from the list when in **In Project** scope but it is still available in either **Unity Registry** or **My Registries** scope because it is still in the registry.
+When you remove a package from the project, the Package Manager updates the project manifest to exclude that package from the list when in **In Project** scope, but it is still available in either **Unity Registry** or **My Registries** scope because it is still in the registry.
 
 When you install or update a package, the Package Manager downloads the package from the registry.
 
@@ -365,7 +369,7 @@ For example, if you set up your own server where you are hosting some of the Uni
 
 #### Supported registry types
 
-Unity Package Manager supports registries based on the **npm** protocol. You can use any off the shelf **npm** registry server and it should work, but [Verdaccio](https://www.npmjs.com/package/verdaccio) is quick to set up and doesn't require a lot of configuration.
+Unity Package Manager supports registries based on the **npm** protocol. You can use any off the shelf **npm** registry server and it should work; [Verdaccio](https://www.npmjs.com/package/verdaccio) is quick to set up and doesn't require a lot of configuration.
 
 Once you set up these servers, you can include them as **scoped registries**, which is the [same concept that **npm** uses](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages).
 
@@ -373,7 +377,7 @@ Once you set up these servers, you can include them as **scoped registries**, wh
 
 Some npm registry servers do not support searching all packages with the `/all` Web API route. The Package Manager Search API relies on configured scoped registries to support this old npm API protocol. It has an HTTP endpoint that returns the metadata of all published packages (for example, `https://registry.my-company.com/-/all`).
 
-If you have a tool that uses the Package Manager API to list available packages, you might experience unexpected results if your registry does not support the old protocol. For example, in this case, the **Package Manager** window does not display packages from those scoped registries in the **My Registries** tab. However, this limitation does not apply to package resolution, so you can still manually add packages from scoped registries to the project manifest.
+If you have a tool that uses the Package Manager API to list available packages, you might experience unexpected results if your registry does not support the old protocol. For example, the **Package Manager** window does not display packages from those scoped registries in the **My Registries** tab. However, this limitation does not apply to package resolution, so you can still manually add packages from scoped registries to the project manifest.
 
 #### Setting up a scoped registry
 
@@ -381,7 +385,7 @@ To set up your scoped registries in your project manifest, use the [scopedRegist
 
 For example, in the project manifest below, there are two scoped registries, **Main** and **Tools**:
 
-```json
+```lang-json
 {
   "scopedRegistries": [
     {

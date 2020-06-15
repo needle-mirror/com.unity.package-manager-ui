@@ -288,11 +288,11 @@ namespace UnityEditor.PackageManager.UI
             }
             else if (PackageCollection.Instance.Filter == PackageFilter.Unity)
             {
-                packages = packages.Where(pkg => !pkg.IsBuiltIn && pkg.IsUnityPackage && !((pkg.Current?.IsLocal ?? false) || (pkg.Current?.IsInDevelopment ?? false)));
+                packages = packages.Where(pkg => !pkg.IsBuiltIn && pkg.IsUnityPackage && !(pkg.Current != null && (pkg.Current.IsLocal || pkg.Current.IsInDevelopment)));
             }
             else if (PackageCollection.Instance.Filter == PackageFilter.Other)
             {
-                packages = packages.Where(pkg => !pkg.IsBuiltIn && !pkg.IsUnityPackage && !((pkg.Current?.IsLocal ?? false) || (pkg.Current?.IsInDevelopment ?? false)));
+                packages = packages.Where(pkg => !pkg.IsBuiltIn && !pkg.IsUnityPackage && !(pkg.Current != null && (pkg.Current.IsLocal || pkg.Current.IsInDevelopment)));
             }
             else // PackageCollection.Instance.Filter == PackageFilter.Local
             {

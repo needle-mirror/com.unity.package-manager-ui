@@ -103,9 +103,9 @@ namespace UnityEditor.PackageManager.UI
 
         private readonly VisualElement root;
 
-        public IEnumerable<PackageItem> packageItems => List.Children().Cast<PackageItem>();
+        public IEnumerable<PackageItem> packageItems { get { return List.Children().Cast<PackageItem>(); } }
 
-        public bool IsExpanded => HeaderCaret?.expanded ?? false;
+        public bool IsExpanded { get { return HeaderCaret != null && HeaderCaret.expanded; } }
 
         public PackageGroup() : this(string.Empty)
         {
@@ -130,7 +130,8 @@ namespace UnityEditor.PackageManager.UI
             if (evt.button == 0)
             {
                 SetExpanded(!HeaderCaret.expanded);
-                OnGroupToggle?.Invoke(HeaderCaret.expanded);
+                if (OnGroupToggle != null)
+                    OnGroupToggle.Invoke(HeaderCaret.expanded);
             }
         }
 
